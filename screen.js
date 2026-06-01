@@ -1185,7 +1185,6 @@
       if (!ctx || !bundle) return;
       resize();
       const now = bundle.currentTime || 0;
-      const nStr = Math.max(1, bundle.stringCount || 6);
       const ls = Math.max(8, Math.min(14, Math.floor(H * 0.04)));
       const bottomY = Math.floor((H - ls * 4) / 2) + ls * 4;
       const cfg = bundle.config || {};
@@ -1320,6 +1319,7 @@
   }
 
   // src/runtime-app.ts
+  var appWindow = window;
   var PLUGIN_ID = "triad_lab";
   var KEY_ORDER2 = [
     "C",
@@ -1797,50 +1797,51 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
   }
   function applyConfig(cfg) {
     if (!cfg || typeof cfg !== "object") return;
-    populateInstrumentControls(cfg);
-    if (cfg.lesson)
-      $("tl-lesson").value = cfg.lesson;
-    if (cfg.key) $("tl-key").value = cfg.key;
-    if (cfg.progression)
-      $("tl-progression").value = cfg.progression;
-    if (cfg.instrument)
-      $("tl-instrument").value = cfg.instrument;
-    if (Number.isFinite(cfg.stringCount))
+    const c = cfg;
+    populateInstrumentControls(c);
+    if (c.lesson)
+      $("tl-lesson").value = c.lesson;
+    if (c.key) $("tl-key").value = c.key;
+    if (c.progression)
+      $("tl-progression").value = c.progression;
+    if (c.instrument)
+      $("tl-instrument").value = c.instrument;
+    if (Number.isFinite(c.stringCount))
       $("tl-string-count").value = String(
-        cfg.stringCount
+        c.stringCount
       );
-    if (cfg.tuningPreset)
-      $("tl-tuning").value = cfg.tuningPreset;
-    if (cfg.stringSet)
-      $("tl-stringset").value = cfg.stringSet;
-    if (Number.isFinite(cfg.bpm))
-      $("tl-bpm").value = String(cfg.bpm);
-    if (Number.isFinite(cfg.bars))
-      $("tl-bars").value = String(cfg.bars);
-    if (Number.isFinite(cfg.startFret))
+    if (c.tuningPreset)
+      $("tl-tuning").value = c.tuningPreset;
+    if (c.stringSet)
+      $("tl-stringset").value = c.stringSet;
+    if (Number.isFinite(c.bpm))
+      $("tl-bpm").value = String(c.bpm);
+    if (Number.isFinite(c.bars))
+      $("tl-bars").value = String(c.bars);
+    if (Number.isFinite(c.startFret))
       $("tl-start-fret").value = String(
-        cfg.startFret
+        c.startFret
       );
-    if (cfg.inversionMode)
-      $("tl-inversion").value = cfg.inversionMode;
-    if (cfg.view) {
-      state.activeView = cfg.view;
-      $("tl-view").value = cfg.view;
+    if (c.inversionMode)
+      $("tl-inversion").value = c.inversionMode;
+    if (c.view) {
+      state.activeView = c.view;
+      $("tl-view").value = c.view;
     }
-    if (cfg.audio) {
+    if (c.audio) {
       const notes = $("tl-audio-notes");
       const metro = $("tl-audio-metronome");
       const harmony = $("tl-audio-harmony");
       const tone = $("tl-audio-tone");
-      if (typeof cfg.audio.notes === "boolean" && notes)
-        notes.checked = cfg.audio.notes;
-      if (typeof cfg.audio.metronome === "boolean" && metro)
-        metro.checked = cfg.audio.metronome;
-      if (typeof cfg.audio.harmony === "boolean" && harmony)
-        harmony.checked = cfg.audio.harmony;
-      if (cfg.audio.harmonyTone && tone) tone.value = cfg.audio.harmonyTone;
+      if (typeof c.audio.notes === "boolean" && notes)
+        notes.checked = c.audio.notes;
+      if (typeof c.audio.metronome === "boolean" && metro)
+        metro.checked = c.audio.metronome;
+      if (typeof c.audio.harmony === "boolean" && harmony)
+        harmony.checked = c.audio.harmony;
+      if (c.audio.harmonyTone && tone) tone.value = c.audio.harmonyTone;
     }
-    const selected = Array.isArray(cfg.qualities) ? new Set(cfg.qualities) : null;
+    const selected = Array.isArray(c.qualities) ? new Set(c.qualities) : null;
     Array.from(
       document.querySelectorAll('#tl-qualities input[type="checkbox"]')
     ).forEach((el) => {
@@ -2037,8 +2038,8 @@ Preset delete failed: ${err.message || err}`
       void renderCurrent();
       syncTransportUI();
     });
-    if (!window.__triadLabTransportKeysBound) {
-      window.__triadLabTransportKeysBound = true;
+    if (!appWindow.__triadLabTransportKeysBound) {
+      appWindow.__triadLabTransportKeysBound = true;
       document.addEventListener("keydown", onTransportKey);
     }
   }
@@ -2056,15 +2057,15 @@ Preset delete failed: ${err.message || err}`
       }
       const data = await response.json();
       try {
-        if (state.activeView === "highway3d" && typeof window.slopsmithViz_highway_3d === "function") {
+        if (state.activeView === "highway3d" && typeof appWindow.slopsmithViz_highway_3d === "function") {
           localStorage.setItem("vizSelection", "highway_3d");
         } else {
           localStorage.setItem("vizSelection", "default");
         }
       } catch (_e) {
       }
-      if (typeof window.playSong === "function") {
-        await window.playSong(data.filename, 0);
+      if (typeof appWindow.playSong === "function") {
+        await appWindow.playSong(data.filename, 0);
       } else {
         throw new Error("window.playSong is unavailable.");
       }
