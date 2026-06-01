@@ -9,7 +9,8 @@
     "lint": "eslint src test screen.ts",
     "lint:fix": "eslint --fix src test screen.ts",
     "format": "prettier --write src test screen.ts",
-    "format:check": "prettier --check src test screen.ts"
+    "format:check": "prettier --check src test screen.ts",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -17,6 +18,7 @@
     "esbuild": "^0.25.5",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "prettier": "^3.8.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.60.0",
