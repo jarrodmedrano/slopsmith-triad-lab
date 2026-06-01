@@ -20,8 +20,17 @@ Triad Lab is a Slopsmith plugin for focused guitar triad practice.
 
 - `plugin.json` - manifest and nav registration
 - `screen.html` - plugin UI
-- `screen.js` - drill generation, preview rendering, preset + playback actions
+- `screen.ts` - TypeScript source for drill generation, preview rendering, preset + playback actions
+- `screen.js` - built browser bundle emitted from `screen.ts`
 - `routes.py` - preset API and temp sloppak generation API
+- `package.json` - build, typecheck, and Vitest scripts
+
+## Development
+
+- `npm install`
+- `npm run build` to regenerate `screen.js` from `screen.ts`
+- `npm test` to run the Vitest suite
+- `npm run typecheck` to validate the TypeScript sources
 
 ## API Endpoints
 

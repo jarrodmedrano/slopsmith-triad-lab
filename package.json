@@ -1,0 +1,25 @@
+{
+  "name": "triad-lab",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild screen.ts --bundle --format=iife --platform=browser --target=es2020 --outfile=screen.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test screen.ts",
+    "lint:fix": "eslint --fix src test screen.ts",
+    "format": "prettier --write src test screen.ts",
+    "format:check": "prettier --check src test screen.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^22.15.0",
+    "esbuild": "^0.25.5",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.60.0",
+    "vitest": "^3.1.4"
+  }
+}
