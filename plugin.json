@@ -1,0 +1,12 @@
+{
+  "id": "triad_lab",
+  "name": "Triad Lab",
+  "version": "0.1.0",
+  "nav": {
+    "label": "Triad Lab",
+    "screen": "triad_lab"
+  },
+  "screen": "screen.html",
+  "script": "screen.js",
+  "routes": "routes.py"
+}

@@ -1,0 +1,688 @@
+<style>
+  .triadlab-root {
+    --triadlab-nav-offset: 64px;
+    min-height: calc(100vh - var(--triadlab-nav-offset));
+    padding: calc(18px + var(--triadlab-nav-offset)) 18px 18px;
+    color: #e5e7eb;
+    background:
+      radial-gradient(
+        circle at top right,
+        rgba(20, 70, 120, 0.18),
+        transparent 32rem
+      ),
+      linear-gradient(180deg, #0a0f18 0%, #0d121d 100%);
+    box-sizing: border-box;
+  }
+  .triadlab-root * {
+    box-sizing: border-box;
+  }
+  .triadlab-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 440px) 1fr;
+    gap: 14px;
+  }
+  .triadlab-panel {
+    background: rgba(17, 24, 39, 0.95);
+    border: 1px solid rgba(71, 85, 105, 0.85);
+    border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
+  }
+  .triadlab-controls {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: calc(100vh - 140px);
+    overflow: auto;
+  }
+  .triadlab-title {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: -0.02em;
+    color: #f8fafc;
+  }
+  .triadlab-sub {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .triadlab-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #dbe7ff;
+  }
+  .triadlab-controls select,
+  .triadlab-controls input {
+    min-height: 35px;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 0 10px;
+  }
+  .triadlab-controls select:focus,
+  .triadlab-controls input:focus {
+    outline: none;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+  }
+  .triadlab-row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .triadlab-row3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .triadlab-chipset {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 8px;
+    background: #0b1220;
+  }
+  .triadlab-chipset label {
+    flex-direction: row;
+    align-items: center;
+    font-weight: 600;
+    color: #dbeafe;
+  }
+  .triadlab-chipset input {
+    min-height: 0;
+    width: auto;
+    margin: 0;
+  }
+  .triadlab-audio-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid rgba(96, 165, 250, 0.6);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.82);
+  }
+  .triadlab-audio-row {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    align-items: center;
+  }
+  .triadlab-audio-options label.triadlab-toggle {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #dbeafe;
+    min-height: 30px;
+  }
+  .triadlab-audio-options .triadlab-toggle input {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    accent-color: #60a5fa;
+  }
+  .triadlab-audio-tone {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .triadlab-audio-tone select {
+    width: 100%;
+    min-height: 30px;
+    font-size: 12px;
+  }
+  .triadlab-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 4px;
+  }
+  .triadlab-actions button,
+  .triadlab-mini {
+    min-height: 36px;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #172033;
+    color: #f8fafc;
+    font-weight: 700;
+    padding: 0 12px;
+    cursor: pointer;
+  }
+  .triadlab-actions button:hover,
+  .triadlab-mini:hover {
+    background: #23314b;
+  }
+  .triadlab-actions .primary {
+    background: linear-gradient(180deg, #2563eb, #1d4ed8);
+    border-color: #60a5fa;
+  }
+  .triadlab-actions .danger {
+    background: linear-gradient(180deg, #b91c1c, #991b1b);
+    border-color: #f87171;
+  }
+  .triadlab-stage {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 620px;
+  }
+  .triadlab-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #334155;
+    background: #0b1220;
+  }
+  .triadlab-tabs button {
+    min-height: 30px;
+    border-radius: 7px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #93c5fd;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0 12px;
+    cursor: pointer;
+  }
+  .triadlab-tabs button.active {
+    background: linear-gradient(180deg, #1d4ed8, #1e40af);
+    color: #fff;
+    border-color: #60a5fa;
+  }
+  .triadlab-note {
+    margin-left: auto;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+  .triadlab-canvas-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 520px;
+    background: #04070d;
+  }
+  #triadlab-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .triadlab-status {
+    border-top: 1px solid #334155;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    color: #cbd5e1;
+    background: rgba(2, 6, 23, 0.7);
+  }
+  .triadlab-transport {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 9px 12px;
+    background: rgba(9, 15, 30, 0.92);
+    border-top: 1px solid rgba(75, 85, 99, 0.4);
+    flex-shrink: 0;
+  }
+  .triadlab-scrub-row {
+    position: relative;
+    height: 18px;
+    display: flex;
+    align-items: center;
+  }
+  .triadlab-scrub-rail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 6px;
+    transform: translateY(-50%);
+    background: #1e293b;
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  .triadlab-loop-region {
+    position: absolute;
+    top: 50%;
+    height: 6px;
+    transform: translateY(-50%);
+    background: rgba(96, 165, 250, 0.45);
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  .triadlab-scrub {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    width: 100%;
+    height: 18px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .triadlab-scrub::-webkit-slider-runnable-track {
+    height: 18px;
+    background: transparent;
+  }
+  .triadlab-scrub::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+    border-radius: 50%;
+    background: #f8fafc;
+    border: 2px solid #2563eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+  .triadlab-scrub::-moz-range-track {
+    height: 6px;
+    background: transparent;
+  }
+  .triadlab-scrub::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #2563eb;
+    border-radius: 50%;
+    background: #f8fafc;
+  }
+  .triadlab-tp-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .triadlab-tp-play {
+    min-height: 38px;
+    min-width: 92px;
+    padding: 0 16px;
+    border-radius: 9px;
+    border: 1px solid #60a5fa;
+    background: linear-gradient(180deg, #2563eb, #1d4ed8);
+    color: #f8fafc;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .triadlab-tp-play:hover {
+    background: linear-gradient(180deg, #1d4ed8, #1e40af);
+  }
+  .triadlab-tp-play.is-playing {
+    background: linear-gradient(180deg, #b91c1c, #991b1b);
+    border-color: #f87171;
+  }
+  .triadlab-tp-btn {
+    min-height: 32px;
+    min-width: 32px;
+    padding: 0 9px;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #172033;
+    color: #cbd5e1;
+    font-weight: 750;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .triadlab-tp-btn:hover {
+    background: #24324a;
+    border-color: #64748b;
+  }
+  .triadlab-tp-btn.active {
+    background: linear-gradient(180deg, #2563eb, #1d4ed8);
+    border-color: #60a5fa;
+    color: #fff;
+  }
+  .triadlab-tp-time {
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: #cbd5e1;
+    min-width: 84px;
+    text-align: center;
+  }
+  .triadlab-tp-sep {
+    width: 1px;
+    align-self: stretch;
+    background: rgba(75, 85, 99, 0.5);
+    margin: 2px;
+  }
+  .triadlab-tp-loop {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .triadlab-tp-lbl {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+  .triadlab-tp-loop-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 62px;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(71, 85, 105, 0.9);
+    background: rgba(15, 23, 42, 0.9);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .triadlab-tp-loop-count.is-live {
+    background: rgba(29, 78, 216, 0.24);
+    border-color: rgba(96, 165, 250, 0.9);
+    color: #dbeafe;
+  }
+  .triadlab-presets {
+    display: flex;
+    gap: 6px;
+  }
+  .triadlab-presets select {
+    flex: 1;
+  }
+  @media (max-width: 980px) {
+    .triadlab-layout {
+      grid-template-columns: 1fr;
+    }
+    .triadlab-controls {
+      max-height: none;
+    }
+    .triadlab-stage {
+      min-height: 500px;
+    }
+  }
+</style>
+
+<div id="triadlab-root" class="triadlab-root">
+  <div class="triadlab-layout">
+    <section class="triadlab-panel triadlab-controls">
+      <div>
+        <h1 class="triadlab-title">Triad Lab</h1>
+        <p class="triadlab-sub">
+          Focused guitar triad drills: quality, inversions, string sets, and
+          progressions.
+        </p>
+      </div>
+
+      <label>
+        Lesson Type
+        <select id="tl-lesson">
+          <option value="quality">Quality ID Drill</option>
+          <option value="inversion">Inversion Drill</option>
+          <option value="stringset">String-Set Drill</option>
+          <option value="progression">Progression Targeting</option>
+        </select>
+      </label>
+
+      <div class="triadlab-row2">
+        <label>
+          Key
+          <select id="tl-key"></select>
+        </label>
+        <label>
+          View
+          <select id="tl-view">
+            <option value="highway2d">2D Highway</option>
+            <option value="highway3d">3D Highway</option>
+            <option value="tab">Tab</option>
+            <option value="notation">Notation</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="triadlab-row3">
+        <label>
+          Instrument
+          <select id="tl-instrument">
+            <option value="guitar">Guitar</option>
+            <option value="bass">Bass</option>
+          </select>
+        </label>
+        <label>
+          Strings
+          <select id="tl-string-count"></select>
+        </label>
+        <label>
+          Tuning
+          <select id="tl-tuning"></select>
+        </label>
+      </div>
+
+      <div class="triadlab-row2">
+        <label>
+          Progression
+          <select id="tl-progression">
+            <option value="single">Single Chord</option>
+            <option value="i-iv-v">I-IV-V</option>
+            <option value="ii-v-i">ii-V-I</option>
+          </select>
+        </label>
+        <label>
+          String Set
+          <select id="tl-stringset">
+            <option value="654">6-5-4</option>
+            <option value="543">5-4-3</option>
+            <option value="432">4-3-2</option>
+            <option value="321">3-2-1</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="triadlab-row3">
+        <label>
+          BPM
+          <input
+            id="tl-bpm"
+            type="number"
+            min="40"
+            max="220"
+            step="1"
+            value="92"
+          />
+        </label>
+        <label>
+          Bars
+          <input
+            id="tl-bars"
+            type="number"
+            min="2"
+            max="24"
+            step="1"
+            value="8"
+          />
+        </label>
+        <label>
+          Start Fret
+          <input
+            id="tl-start-fret"
+            type="number"
+            min="0"
+            max="15"
+            step="1"
+            value="2"
+          />
+        </label>
+      </div>
+
+      <label>Triad Qualities</label>
+      <div class="triadlab-chipset" id="tl-qualities">
+        <label><input type="checkbox" value="maj" checked /> Major</label>
+        <label><input type="checkbox" value="min" checked /> Minor</label>
+        <label><input type="checkbox" value="dim" checked /> Diminished</label>
+        <label><input type="checkbox" value="aug" checked /> Augmented</label>
+      </div>
+
+      <label>
+        Inversion Focus
+        <select id="tl-inversion">
+          <option value="cycle">Cycle (Root -> 1st -> 2nd)</option>
+          <option value="root">Root position</option>
+          <option value="first">1st inversion</option>
+          <option value="second">2nd inversion</option>
+        </select>
+      </label>
+
+      <div
+        class="triadlab-audio-options triadlab-audio-row"
+        aria-label="Preview audio options"
+      >
+        <label class="triadlab-toggle"
+          ><input id="tl-audio-notes" type="checkbox" checked /> Notes</label
+        >
+        <label class="triadlab-toggle"
+          ><input id="tl-audio-metronome" type="checkbox" checked />
+          Metronome</label
+        >
+        <label class="triadlab-toggle"
+          ><input id="tl-audio-harmony" type="checkbox" checked />
+          Harmony</label
+        >
+        <label class="triadlab-audio-tone" for="tl-audio-tone"
+          >Tone
+          <select id="tl-audio-tone">
+            <option value="pad">Pad</option>
+            <option value="organ">Organ</option>
+            <option value="epiano">E-Piano</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="triadlab-actions">
+        <button id="tl-generate" class="primary">Generate Drill</button>
+        <button id="tl-preview">Preview Scroll</button>
+        <button id="tl-play-host">Play In Slopsmith</button>
+      </div>
+
+      <div class="triadlab-presets">
+        <select id="tl-presets">
+          <option value="">Saved presets...</option>
+        </select>
+        <button id="tl-save-preset" class="triadlab-mini">Save</button>
+        <button id="tl-delete-preset" class="triadlab-mini">Delete</button>
+      </div>
+    </section>
+
+    <section class="triadlab-panel triadlab-stage">
+      <div class="triadlab-tabs">
+        <button data-view="highway2d" class="active">2D</button>
+        <button data-view="highway3d">3D</button>
+        <button data-view="tab">Tab</button>
+        <button data-view="notation">Notation</button>
+        <span id="tl-render-note" class="triadlab-note">Ready.</span>
+      </div>
+      <div class="triadlab-canvas-wrap">
+        <canvas id="triadlab-canvas"></canvas>
+      </div>
+      <div
+        id="tl-transport"
+        class="triadlab-transport"
+        aria-label="Preview transport"
+      >
+        <div class="triadlab-scrub-row">
+          <div class="triadlab-scrub-rail"></div>
+          <div id="tl-loop-region" class="triadlab-loop-region" hidden></div>
+          <input
+            type="range"
+            id="tl-tp-scrub"
+            class="triadlab-scrub"
+            min="0"
+            max="0"
+            step="0.01"
+            value="0"
+            aria-label="Seek through preview"
+          />
+        </div>
+        <div class="triadlab-tp-controls">
+          <button
+            type="button"
+            id="tl-tp-start"
+            class="triadlab-tp-btn"
+            title="Back to start (Home)"
+          >
+            ⏮
+          </button>
+          <button
+            type="button"
+            id="tl-tp-back"
+            class="triadlab-tp-btn"
+            title="Nudge back one bar (←)"
+          >
+            ⟨
+          </button>
+          <button
+            type="button"
+            id="tl-tp-play"
+            class="triadlab-tp-play"
+            title="Play or stop preview (Space)"
+          >
+            ▶ Play
+          </button>
+          <button
+            type="button"
+            id="tl-tp-fwd"
+            class="triadlab-tp-btn"
+            title="Nudge forward one bar (→)"
+          >
+            ⟩
+          </button>
+          <span class="triadlab-tp-time"
+            ><span id="tl-tp-time-cur">0:00</span> /
+            <span id="tl-tp-time-dur">0:00</span></span
+          >
+          <span class="triadlab-tp-sep"></span>
+          <div class="triadlab-tp-loop" role="group" aria-label="A-B loop">
+            <span class="triadlab-tp-lbl">Loop</span>
+            <button
+              type="button"
+              id="tl-tp-loop-a"
+              class="triadlab-tp-btn"
+              title="Set loop start at playhead ([)"
+            >
+              A
+            </button>
+            <button
+              type="button"
+              id="tl-tp-loop-b"
+              class="triadlab-tp-btn"
+              title="Set loop end at playhead (])"
+            >
+              B
+            </button>
+            <button
+              type="button"
+              id="tl-tp-loop-clear"
+              class="triadlab-tp-btn"
+              title="Clear loop (\)"
+            >
+              ✕
+            </button>
+            <span
+              id="tl-tp-loop-count"
+              class="triadlab-tp-loop-count"
+              title="Completed wraps in current preview run"
+              >Loops 0</span
+            >
+          </div>
+        </div>
+      </div>
+      <pre id="tl-status" class="triadlab-status">
+Generate a drill to begin.</pre
+      >
+    </section>
+  </div>
+</div>
