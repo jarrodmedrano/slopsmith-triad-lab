@@ -1,8 +1,4 @@
-import {
-  NOTATION_KEY_SIGNATURES,
-  type TriadBundle,
-  type TriadExercise,
-} from "./triad-core";
+import { NOTATION_KEY_SIGNATURES, type TriadBundle } from "./triad-core";
 
 export const STRING_COLORS = [
   "#ef4444",
@@ -17,9 +13,7 @@ export const STRING_COLORS = [
 
 function stringLabelForMidi(midi: number): string {
   const pc = ((midi % 12) + 12) % 12;
-  return (
-    ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"][pc] || "?"
-  );
+  return ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"][pc] || "?";
 }
 
 export function makeBuiltin2DRenderer() {
@@ -51,9 +45,7 @@ export function makeBuiltin2DRenderer() {
   }
 
   function xForDt(dt: number) {
-    return (
-      LEFT_PAD + ((dt + BEHIND) / (AHEAD + BEHIND)) * (W - LEFT_PAD - RIGHT_PAD)
-    );
+    return LEFT_PAD + ((dt + BEHIND) / (AHEAD + BEHIND)) * (W - LEFT_PAD - RIGHT_PAD);
   }
 
   function drawBackground() {
@@ -79,8 +71,7 @@ export function makeBuiltin2DRenderer() {
       const dt = b.time - now;
       if (dt < -BEHIND || dt > AHEAD) continue;
       const x = xForDt(dt);
-      ctx.strokeStyle =
-        b.measure >= 0 ? "rgba(96,165,250,0.55)" : "rgba(148,163,184,0.18)";
+      ctx.strokeStyle = b.measure >= 0 ? "rgba(96,165,250,0.55)" : "rgba(148,163,184,0.18)";
       ctx.lineWidth = b.measure >= 0 ? 1.4 : 1;
       ctx.beginPath();
       ctx.moveTo(x, TOP_PAD - 24);
@@ -210,20 +201,20 @@ export function makeBuiltin2DTabRenderer() {
     canvas.height = H;
   }
 
-  function draw(exercise: TriadExercise, now: number) {
+  function draw(bundle: TriadBundle) {
     if (!ctx) return;
     resize();
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = "#faf3df";
     ctx.fillRect(0, 0, W, H);
 
+    const now = bundle.currentTime || 0;
+
     const top = 96;
     const spacing = 28;
     const nStr = Math.max(
       1,
-      exercise?.session?.stringCount ||
-        exercise?.chart?.chordTemplates?.[0]?.frets?.length ||
-        6,
+      bundle?.stringCount || bundle?.chordTemplates?.[0]?.frets?.length || 6,
     );
     for (let s = 0; s < nStr; s += 1) {
       const y = top + s * spacing;
@@ -243,10 +234,10 @@ export function makeBuiltin2DTabRenderer() {
     const x1 = W - 36;
     const pxPerSec = (x1 - x0) / visibleSec;
 
-    for (const chord of exercise.chart.chords) {
+    for (const chord of bundle.chords || []) {
       const x = x0 + (chord.t - now) * pxPerSec;
       if (x < x0 - 80 || x > x1 + 40) continue;
-      const tpl = exercise.chart.chordTemplates[chord.id];
+      const tpl = bundle.chordTemplates?.[chord.id];
       if (tpl) {
         ctx.fillStyle = "#7c2d12";
         ctx.font = "italic 12px Georgia, serif";
@@ -342,9 +333,7 @@ export function makeBuiltin2DNotationRenderer() {
   }
 
   function xForDt(dt: number) {
-    return (
-      LEFT_PAD + ((dt + BEHIND) / (AHEAD + BEHIND)) * (W - LEFT_PAD - RIGHT_PAD)
-    );
+    return LEFT_PAD + ((dt + BEHIND) / (AHEAD + BEHIND)) * (W - LEFT_PAD - RIGHT_PAD);
   }
 
   function stepToY(step: number, bottomY: number, ls: number) {
@@ -372,15 +361,11 @@ export function makeBuiltin2DNotationRenderer() {
     };
     const order = isFlats ? [6, 2, 5, 1, 4, 0, 3] : [3, 0, 4, 1, 5, 2, 6];
     const alt = isFlats ? -1 : 1;
-    for (let i = 0; i < Math.min(Math.abs(keyAcc), 7); i += 1)
-      map[order[i]] = alt;
+    for (let i = 0; i < Math.min(Math.abs(keyAcc), 7); i += 1) map[order[i]] = alt;
     return map;
   }
 
-  function noteAccidental(
-    soundingMidi: number,
-    ksAlter: Record<number, number>,
-  ) {
+  function noteAccidental(soundingMidi: number, ksAlter: Record<number, number>) {
     const { alter, letter } = spellMidi(soundingMidi);
     const sig = ksAlter[letter] || 0;
     if (alter === sig) return null;
@@ -429,11 +414,7 @@ export function makeBuiltin2DNotationRenderer() {
       ctx.font = `${ls * 1.4}px serif`;
       ctx.textAlign = "center";
       for (let i = 0; i < n; i += 1) {
-        ctx.fillText(
-          ch,
-          x0 + i * ls * 0.95,
-          stepToY(steps[i], bottomY, ls) + ls * 0.4,
-        );
+        ctx.fillText(ch, x0 + i * ls * 0.95, stepToY(steps[i], bottomY, ls) + ls * 0.4);
       }
       ctx.textAlign = "left";
     }

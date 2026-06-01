@@ -33,20 +33,7 @@ interface AppWindow extends Window {
 const appWindow = window as AppWindow;
 
 const PLUGIN_ID = "triad_lab";
-const KEY_ORDER = [
-  "C",
-  "C#",
-  "D",
-  "Eb",
-  "E",
-  "F",
-  "F#",
-  "G",
-  "Ab",
-  "A",
-  "Bb",
-  "B",
-];
+const KEY_ORDER = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 
 type RendererLike = {
   init?: (...args: unknown[]) => void;
@@ -54,6 +41,14 @@ type RendererLike = {
   resize?: (...args: unknown[]) => void;
   destroy?: () => void;
   readyPromise?: Promise<unknown>;
+  contextType?: string;
+};
+
+type RendererResolution = {
+  factory: () => RendererLike;
+  label: string;
+  contextType: "2d" | "webgl2";
+  fallback3d?: boolean;
 };
 
 const state: {
@@ -69,6 +64,7 @@ const state: {
   activeBundle: ReturnType<typeof makeBundle> | null;
   rendererKind: string | null;
   bundleExercise: TriadExercise | null;
+  canvasContextType: "2d" | "webgl2" | null;
   loopA: number | null;
   loopB: number | null;
   lastPreviewTime: number;
@@ -86,6 +82,7 @@ const state: {
   activeBundle: null as ReturnType<typeof makeBundle> | null,
   rendererKind: null,
   bundleExercise: null,
+  canvasContextType: null,
   loopA: null as number | null,
   loopB: null as number | null,
   lastPreviewTime: 0,
@@ -116,8 +113,7 @@ function setRenderNote(text: string) {
 
 function setPreviewButtonText() {
   const btn = $("tl-preview");
-  if (btn)
-    btn.textContent = state.previewing ? "Stop Preview" : "Preview Scroll";
+  if (btn) btn.textContent = state.previewing ? "Stop Preview" : "Preview Scroll";
   const tp = $("tl-tp-play");
   if (tp) {
     tp.classList.toggle("is-playing", !!state.previewing);
@@ -157,9 +153,7 @@ function syncTransportUI() {
   if (dur) dur.textContent = fmtTime(duration);
   if (scrub) {
     scrub.max = String(duration || 0);
-    scrub.value = String(
-      Math.max(0, Math.min(duration || 0, state.previewTime)),
-    );
+    scrub.value = String(Math.max(0, Math.min(duration || 0, state.previewTime)));
     scrub.disabled = !state.exercise;
   }
 
@@ -211,8 +205,7 @@ function syncHighwaySettings(bundle: TriadBundle | null) {
   try {
     bundle.inverted = localStorage.getItem("invertHighway") === "true";
     bundle.lefty = localStorage.getItem("lefty") === "1";
-    bundle.renderScale =
-      parseFloat(localStorage.getItem("renderScale") || "1") || 1;
+    bundle.renderScale = parseFloat(localStorage.getItem("renderScale") || "1") || 1;
   } catch (_err) {
     bundle.inverted = false;
     bundle.lefty = false;
@@ -223,9 +216,7 @@ function syncHighwaySettings(bundle: TriadBundle | null) {
 function configureForm() {
   const keySel = $("tl-key") as HTMLSelectElement | null;
   if (!keySel) return;
-  keySel.innerHTML = KEY_ORDER.map(
-    (key) => `<option value="${key}">${key}</option>`,
-  ).join("");
+  keySel.innerHTML = KEY_ORDER.map((key) => `<option value="${key}">${key}</option>`).join("");
   keySel.value = "C";
   const viewSel = $("tl-view") as HTMLSelectElement | null;
   if (viewSel) viewSel.value = state.activeView;
@@ -236,9 +227,7 @@ function getSelectedQualities() {
   const checks = Array.from(
     document.querySelectorAll('#tl-qualities input[type="checkbox"]'),
   ) as HTMLInputElement[];
-  const selected = checks
-    .filter((node) => node.checked)
-    .map((node) => node.value);
+  const selected = checks.filter((node) => node.checked).map((node) => node.value);
   return selected.length ? selected : ["maj"];
 }
 
@@ -259,17 +248,12 @@ function populateInstrumentControls(
 
   if (instrumentSel) {
     instrumentSel.innerHTML = ["guitar", "bass"]
-      .map(
-        (id) =>
-          `<option value="${id}">${id === "bass" ? "Bass" : "Guitar"}</option>`,
-      )
+      .map((id) => `<option value="${id}">${id === "bass" ? "Bass" : "Guitar"}</option>`)
       .join("");
     instrumentSel.value = instrument;
   }
 
-  const counts = availableStringCounts(instrument).filter(
-    (count) => count >= 4,
-  );
+  const counts = availableStringCounts(instrument).filter((count) => count >= 4);
   const preferredCount = counts.includes(Number(cfg?.stringCount))
     ? Number(cfg?.stringCount)
     : instrument === "bass"
@@ -283,10 +267,7 @@ function populateInstrumentControls(
     stringCountSel.value = String(preferredCount);
   }
 
-  const presets = availableTuningPresets(
-    instrument as "guitar" | "bass",
-    preferredCount,
-  );
+  const presets = availableTuningPresets(instrument as "guitar" | "bass", preferredCount);
   const tuning = Array.isArray(cfg?.tuning) ? cfg.tuning : [];
   const selectedPreset =
     presets.find((preset) => preset.id === cfg?.tuningPreset) ||
@@ -294,9 +275,7 @@ function populateInstrumentControls(
       ? presets.find(
           (preset) =>
             preset.tuning.length === tuning.length &&
-            preset.tuning.every(
-              (value, index) => Number(value) === Number(tuning[index]),
-            ),
+            preset.tuning.every((value, index) => Number(value) === Number(tuning[index])),
         )
       : null) ||
     presets[0] ||
@@ -314,10 +293,7 @@ function populateInstrumentControls(
     stringSetSel.innerHTML = setOptions
       .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
       .join("");
-    stringSetSel.value = sanitizeStringSet(
-      cfg?.stringSet || stringSetSel.value,
-      preferredCount,
-    );
+    stringSetSel.value = sanitizeStringSet(cfg?.stringSet || stringSetSel.value, preferredCount);
   }
 }
 
@@ -326,22 +302,15 @@ function refreshInstrumentControls() {
 }
 
 function readConfig() {
-  const instrument =
-    inputValue("tl-instrument", "guitar") === "bass" ? "bass" : "guitar";
+  const instrument = inputValue("tl-instrument", "guitar") === "bass" ? "bass" : "guitar";
   const stringCount = clamp(
-    parseInt(
-      inputValue("tl-string-count", instrument === "bass" ? "4" : "6"),
-      10,
-    ),
+    parseInt(inputValue("tl-string-count", instrument === "bass" ? "4" : "6"), 10),
     4,
     8,
   );
   const tuningPreset = inputValue("tl-tuning", "standard");
   const setup = resolveStringSetup({ instrument, stringCount, tuningPreset });
-  const stringSet = sanitizeStringSet(
-    inputValue("tl-stringset"),
-    setup.stringCount,
-  );
+  const stringSet = sanitizeStringSet(inputValue("tl-stringset"), setup.stringCount);
 
   return {
     lesson: inputValue("tl-lesson"),
@@ -368,7 +337,6 @@ function readConfig() {
   };
 }
 
-
 function renderCurrent(): Promise<void> | void {
   if (!state.exercise) {
     setStatus("Generate a drill to begin.");
@@ -381,8 +349,7 @@ function renderCurrent(): Promise<void> | void {
   if (view === "notation") {
     return ensureRenderer("notation").then(() => {
       syncHighwaySettings(state.activeBundle);
-      if (state.activeBundle)
-        state.activeBundle.currentTime = state.previewTime;
+      if (state.activeBundle) state.activeBundle.currentTime = state.previewTime;
       state.renderer?.draw?.(state.activeBundle);
       setStatus(
         `${state.exercise?.summary}\nView: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`,
@@ -402,23 +369,80 @@ function renderCurrent(): Promise<void> | void {
   });
 }
 
-async function resolveRendererFactory(kind: string) {
-  if (kind === "builtin_2d")
-    return { factory: makeBuiltin2DRenderer, label: "2D Highway" };
-  if (kind === "tab_2d")
-    return { factory: makeBuiltin2DTabRenderer, label: "Tab" };
-  if (kind === "notation_2d")
-    return { factory: makeBuiltin2DNotationRenderer, label: "Notation" };
-  return { factory: makeBuiltin2DRenderer, label: "2D Highway" };
+async function resolveRendererFactory(kind: string): Promise<RendererResolution> {
+  if (kind === "highway_3d") {
+    const threeFactory = appWindow.slopsmithViz_highway_3d as
+      | ((...args: unknown[]) => unknown)
+      | undefined;
+    if (typeof threeFactory === "function") {
+      return {
+        factory: () => {
+          const renderer = threeFactory();
+          if (!renderer || typeof renderer !== "object") {
+            throw new Error("3D renderer factory returned an invalid instance.");
+          }
+          return renderer as RendererLike;
+        },
+        label: "3D Highway",
+        contextType:
+          (threeFactory as { contextType?: string }).contextType === "webgl2" ? "webgl2" : "2d",
+      };
+    }
+    return {
+      factory: () => makeBuiltin2DRenderer() as unknown as RendererLike,
+      label: "2D Highway",
+      contextType: "2d",
+      fallback3d: true,
+    };
+  }
+  if (kind === "builtin_2d") {
+    return {
+      factory: () => makeBuiltin2DRenderer() as unknown as RendererLike,
+      label: "2D Highway",
+      contextType: "2d",
+    };
+  }
+  if (kind === "tab_2d") {
+    return {
+      factory: () => makeBuiltin2DTabRenderer() as unknown as RendererLike,
+      label: "Tab",
+      contextType: "2d",
+    };
+  }
+  if (kind === "notation_2d") {
+    return {
+      factory: () => makeBuiltin2DNotationRenderer() as unknown as RendererLike,
+      label: "Notation",
+      contextType: "2d",
+    };
+  }
+  return {
+    factory: () => makeBuiltin2DRenderer() as unknown as RendererLike,
+    label: "2D Highway",
+    contextType: "2d",
+  };
+}
+
+function ensureCanvasForContext(contextType: "2d" | "webgl2") {
+  const current = $("triadlab-canvas") as HTMLCanvasElement | null;
+  if (!current) return null;
+  if (state.canvasContextType && state.canvasContextType !== contextType) {
+    const fresh = current.cloneNode(false) as HTMLCanvasElement;
+    current.replaceWith(fresh);
+    return fresh;
+  }
+  return current;
 }
 
 async function ensureRenderer(view: string) {
   const kind =
-    view === "tab"
-      ? "tab_2d"
-      : view === "notation"
-        ? "notation_2d"
-        : "builtin_2d";
+    view === "highway3d"
+      ? "highway_3d"
+      : view === "tab"
+        ? "tab_2d"
+        : view === "notation"
+          ? "notation_2d"
+          : "builtin_2d";
   if (
     state.renderer &&
     state.activeBundle &&
@@ -432,18 +456,52 @@ async function ensureRenderer(view: string) {
   state.activeBundle = makeBundle(state.exercise);
   state.bundleExercise = state.exercise;
 
-  const canvas = $("triadlab-canvas") as HTMLCanvasElement | null;
   const resolved = await resolveRendererFactory(kind);
-  state.renderer = resolved.factory() as RendererLike;
-  state.rendererKind = kind;
+  let canvas = ensureCanvasForContext(resolved.contextType);
+  if (!canvas) {
+    setStatus("Renderer unavailable: missing canvas.");
+    return;
+  }
 
-  state.renderer?.init?.(canvas as HTMLCanvasElement, state.activeBundle);
+  try {
+    state.renderer = resolved.factory();
+    state.rendererKind = kind;
+    state.renderer?.init?.(canvas, state.activeBundle);
+    if (state.renderer?.readyPromise) await state.renderer.readyPromise;
+    state.renderer?.resize?.(
+      Math.round(canvas.clientWidth || canvas.width || 0),
+      Math.round(canvas.clientHeight || canvas.height || 0),
+    );
+    state.canvasContextType = resolved.contextType;
+    state.fallback3d = !!resolved.fallback3d;
+    setRenderNote(resolved.fallback3d ? "2D Highway (3D unavailable)" : resolved.label);
+    return;
+  } catch (err) {
+    stopRenderer();
+    if (kind !== "highway_3d") {
+      setStatus(
+        `${($("tl-status") as HTMLElement | null)?.textContent || ""}\n\nRender failed: ${(err as Error).message || err}`,
+      );
+      return;
+    }
+  }
+
+  const fallback = await resolveRendererFactory("builtin_2d");
+  canvas = ensureCanvasForContext("2d");
+  if (!canvas) {
+    setStatus("Renderer fallback unavailable: missing canvas.");
+    return;
+  }
+  state.renderer = fallback.factory();
+  state.rendererKind = "builtin_2d";
+  state.renderer?.init?.(canvas, state.activeBundle);
   state.renderer?.resize?.(
-    Math.round(canvas?.clientWidth || canvas?.width || 0),
-    Math.round(canvas?.clientHeight || canvas?.height || 0),
+    Math.round(canvas.clientWidth || canvas.width || 0),
+    Math.round(canvas.clientHeight || canvas.height || 0),
   );
-  state.fallback3d = false;
-  setRenderNote(resolved.label);
+  state.canvasContextType = "2d";
+  state.fallback3d = true;
+  setRenderNote("2D Highway (3D failed to initialize)");
 }
 
 function seekPreview(nextTime: number) {
@@ -485,9 +543,7 @@ function nudgePreviewBar(dir: number) {
     const next = downbeats.find((beatTime: number) => beatTime > t + 0.05);
     seekPreview(next != null ? next : duration);
   } else {
-    const prev = [...downbeats]
-      .reverse()
-      .find((beatTime) => beatTime < t - 0.05);
+    const prev = [...downbeats].reverse().find((beatTime) => beatTime < t - 0.05);
     seekPreview(prev != null ? prev : 0);
   }
 }
@@ -609,8 +665,7 @@ function togglePreview() {
   state.loopCount = 0;
   state.previewStartMs = performance.now() - state.previewTime * 1000;
   state.lastPreviewTime = state.previewTime;
-  if (audioState.ctx?.state === "suspended")
-    audioState.ctx.resume().catch(() => {});
+  if (audioState.ctx?.state === "suspended") audioState.ctx.resume().catch(() => {});
   stopAudio();
   if (state.activeBundle) {
     schedulePreviewAudio(
@@ -627,13 +682,8 @@ function togglePreview() {
 }
 
 function syncViewButtons() {
-  Array.from(
-    document.querySelectorAll(".triadlab-tabs button[data-view]"),
-  ).forEach((btn) => {
-    btn.classList.toggle(
-      "active",
-      btn.getAttribute("data-view") === state.activeView,
-    );
+  Array.from(document.querySelectorAll(".triadlab-tabs button[data-view]")).forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-view") === state.activeView);
   });
   const viewSel = $("tl-view") as HTMLSelectElement | null;
   if (viewSel) viewSel.value = state.activeView;
@@ -643,31 +693,19 @@ function applyConfig(cfg: unknown) {
   if (!cfg || typeof cfg !== "object") return;
   const c = cfg as Partial<TriadConfig>;
   populateInstrumentControls(c);
-  if (c.lesson)
-    ($("tl-lesson") as HTMLInputElement | null)!.value = c.lesson;
+  if (c.lesson) ($("tl-lesson") as HTMLInputElement | null)!.value = c.lesson;
   if (c.key) ($("tl-key") as HTMLSelectElement | null)!.value = c.key;
-  if (c.progression)
-    ($("tl-progression") as HTMLSelectElement | null)!.value = c.progression;
-  if (c.instrument)
-    ($("tl-instrument") as HTMLSelectElement | null)!.value = c.instrument;
+  if (c.progression) ($("tl-progression") as HTMLSelectElement | null)!.value = c.progression;
+  if (c.instrument) ($("tl-instrument") as HTMLSelectElement | null)!.value = c.instrument;
   if (Number.isFinite(c.stringCount))
-    ($("tl-string-count") as HTMLSelectElement | null)!.value = String(
-      c.stringCount,
-    );
-  if (c.tuningPreset)
-    ($("tl-tuning") as HTMLSelectElement | null)!.value = c.tuningPreset;
-  if (c.stringSet)
-    ($("tl-stringset") as HTMLSelectElement | null)!.value = c.stringSet;
-  if (Number.isFinite(c.bpm))
-    ($("tl-bpm") as HTMLInputElement | null)!.value = String(c.bpm);
-  if (Number.isFinite(c.bars))
-    ($("tl-bars") as HTMLInputElement | null)!.value = String(c.bars);
+    ($("tl-string-count") as HTMLSelectElement | null)!.value = String(c.stringCount);
+  if (c.tuningPreset) ($("tl-tuning") as HTMLSelectElement | null)!.value = c.tuningPreset;
+  if (c.stringSet) ($("tl-stringset") as HTMLSelectElement | null)!.value = c.stringSet;
+  if (Number.isFinite(c.bpm)) ($("tl-bpm") as HTMLInputElement | null)!.value = String(c.bpm);
+  if (Number.isFinite(c.bars)) ($("tl-bars") as HTMLInputElement | null)!.value = String(c.bars);
   if (Number.isFinite(c.startFret))
-    ($("tl-start-fret") as HTMLInputElement | null)!.value = String(
-      c.startFret,
-    );
-  if (c.inversionMode)
-    ($("tl-inversion") as HTMLSelectElement | null)!.value = c.inversionMode;
+    ($("tl-start-fret") as HTMLInputElement | null)!.value = String(c.startFret);
+  if (c.inversionMode) ($("tl-inversion") as HTMLSelectElement | null)!.value = c.inversionMode;
   if (c.view) {
     state.activeView = c.view;
     ($("tl-view") as HTMLSelectElement | null)!.value = c.view;
@@ -677,20 +715,14 @@ function applyConfig(cfg: unknown) {
     const metro = $("tl-audio-metronome") as HTMLInputElement | null;
     const harmony = $("tl-audio-harmony") as HTMLInputElement | null;
     const tone = $("tl-audio-tone") as HTMLSelectElement | null;
-    if (typeof c.audio.notes === "boolean" && notes)
-      notes.checked = c.audio.notes;
-    if (typeof c.audio.metronome === "boolean" && metro)
-      metro.checked = c.audio.metronome;
-    if (typeof c.audio.harmony === "boolean" && harmony)
-      harmony.checked = c.audio.harmony;
+    if (typeof c.audio.notes === "boolean" && notes) notes.checked = c.audio.notes;
+    if (typeof c.audio.metronome === "boolean" && metro) metro.checked = c.audio.metronome;
+    if (typeof c.audio.harmony === "boolean" && harmony) harmony.checked = c.audio.harmony;
     if (c.audio.harmonyTone && tone) tone.value = c.audio.harmonyTone;
   }
   const selected = Array.isArray(c.qualities) ? new Set(c.qualities) : null;
-  Array.from(
-    document.querySelectorAll('#tl-qualities input[type="checkbox"]'),
-  ).forEach((el) => {
-    (el as HTMLInputElement).checked =
-      !selected || selected.has((el as HTMLInputElement).value);
+  Array.from(document.querySelectorAll('#tl-qualities input[type="checkbox"]')).forEach((el) => {
+    (el as HTMLInputElement).checked = !selected || selected.has((el as HTMLInputElement).value);
   });
   syncViewButtons();
 }
@@ -743,12 +775,9 @@ async function deletePreset() {
   if (!id) return;
   if (!window.confirm("Delete selected preset?")) return;
 
-  const response = await fetch(
-    `/api/plugins/${PLUGIN_ID}/presets/${encodeURIComponent(id)}`,
-    {
-      method: "DELETE",
-    },
-  );
+  const response = await fetch(`/api/plugins/${PLUGIN_ID}/presets/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   await loadPresets();
 }
@@ -782,17 +811,11 @@ function bind() {
     seekPreview(Number(($("tl-tp-scrub") as HTMLInputElement).value)),
   );
 
-  [
-    "tl-audio-notes",
-    "tl-audio-metronome",
-    "tl-audio-harmony",
-    "tl-audio-tone",
-  ].forEach((id) => {
+  ["tl-audio-notes", "tl-audio-metronome", "tl-audio-harmony", "tl-audio-tone"].forEach((id) => {
     $(id)?.addEventListener("change", () => {
       if (state.exercise) {
         state.exercise.session.audio = readConfig().audio;
-        if (state.activeBundle)
-          state.activeBundle.config.audio = state.exercise.session.audio;
+        if (state.activeBundle) state.activeBundle.config.audio = state.exercise.session.audio;
       }
       if (state.previewing && state.activeBundle) {
         stopAudio();
@@ -838,9 +861,7 @@ function bind() {
     void renderCurrent();
   });
 
-  Array.from(
-    document.querySelectorAll(".triadlab-tabs button[data-view]"),
-  ).forEach((btn) => {
+  Array.from(document.querySelectorAll(".triadlab-tabs button[data-view]")).forEach((btn) => {
     btn.addEventListener("click", () => {
       state.activeView = btn.getAttribute("data-view") || "highway2d";
       syncViewButtons();
@@ -863,15 +884,12 @@ function bind() {
   ];
   regenIds.forEach((id) => {
     $(id)?.addEventListener("change", () => {
-      if (id === "tl-instrument" || id === "tl-string-count")
-        refreshInstrumentControls();
+      if (id === "tl-instrument" || id === "tl-string-count") refreshInstrumentControls();
       if (state.exercise) void generateDrill();
     });
   });
 
-  Array.from(
-    document.querySelectorAll('#tl-qualities input[type="checkbox"]'),
-  ).forEach((el) => {
+  Array.from(document.querySelectorAll('#tl-qualities input[type="checkbox"]')).forEach((el) => {
     el.addEventListener("change", () => {
       if (state.exercise) void generateDrill();
     });

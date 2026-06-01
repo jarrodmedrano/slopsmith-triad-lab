@@ -1025,17 +1025,18 @@
       canvas.width = W;
       canvas.height = H;
     }
-    function draw(exercise, now) {
+    function draw(bundle) {
       if (!ctx) return;
       resize();
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#faf3df";
       ctx.fillRect(0, 0, W, H);
+      const now = bundle.currentTime || 0;
       const top = 96;
       const spacing = 28;
       const nStr = Math.max(
         1,
-        exercise?.session?.stringCount || exercise?.chart?.chordTemplates?.[0]?.frets?.length || 6
+        bundle?.stringCount || bundle?.chordTemplates?.[0]?.frets?.length || 6
       );
       for (let s = 0; s < nStr; s += 1) {
         const y = top + s * spacing;
@@ -1053,10 +1054,10 @@
       const x0 = 90;
       const x1 = W - 36;
       const pxPerSec = (x1 - x0) / visibleSec;
-      for (const chord of exercise.chart.chords) {
+      for (const chord of bundle.chords || []) {
         const x = x0 + (chord.t - now) * pxPerSec;
         if (x < x0 - 80 || x > x1 + 40) continue;
-        const tpl = exercise.chart.chordTemplates[chord.id];
+        const tpl = bundle.chordTemplates?.[chord.id];
         if (tpl) {
           ctx.fillStyle = "#7c2d12";
           ctx.font = "italic 12px Georgia, serif";
@@ -1171,8 +1172,7 @@
       };
       const order = isFlats ? [6, 2, 5, 1, 4, 0, 3] : [3, 0, 4, 1, 5, 2, 6];
       const alt = isFlats ? -1 : 1;
-      for (let i = 0; i < Math.min(Math.abs(keyAcc), 7); i += 1)
-        map[order[i]] = alt;
+      for (let i = 0; i < Math.min(Math.abs(keyAcc), 7); i += 1) map[order[i]] = alt;
       return map;
     }
     function noteAccidental(soundingMidi, ksAlter) {
@@ -1219,11 +1219,7 @@
         ctx.font = `${ls * 1.4}px serif`;
         ctx.textAlign = "center";
         for (let i = 0; i < n; i += 1) {
-          ctx.fillText(
-            ch,
-            x0 + i * ls * 0.95,
-            stepToY(steps[i], bottomY, ls) + ls * 0.4
-          );
+          ctx.fillText(ch, x0 + i * ls * 0.95, stepToY(steps[i], bottomY, ls) + ls * 0.4);
         }
         ctx.textAlign = "left";
       }
@@ -1321,20 +1317,7 @@
   // src/runtime-app.ts
   var appWindow = window;
   var PLUGIN_ID = "triad_lab";
-  var KEY_ORDER2 = [
-    "C",
-    "C#",
-    "D",
-    "Eb",
-    "E",
-    "F",
-    "F#",
-    "G",
-    "Ab",
-    "A",
-    "Bb",
-    "B"
-  ];
+  var KEY_ORDER2 = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
   var state = {
     exercise: null,
     activeView: "highway2d",
@@ -1348,6 +1331,7 @@
     activeBundle: null,
     rendererKind: null,
     bundleExercise: null,
+    canvasContextType: null,
     loopA: null,
     loopB: null,
     lastPreviewTime: 0,
@@ -1372,8 +1356,7 @@
   }
   function setPreviewButtonText() {
     const btn = $("tl-preview");
-    if (btn)
-      btn.textContent = state.previewing ? "Stop Preview" : "Preview Scroll";
+    if (btn) btn.textContent = state.previewing ? "Stop Preview" : "Preview Scroll";
     const tp = $("tl-tp-play");
     if (tp) {
       tp.classList.toggle("is-playing", !!state.previewing);
@@ -1408,9 +1391,7 @@
     if (dur) dur.textContent = fmtTime(duration);
     if (scrub) {
       scrub.max = String(duration || 0);
-      scrub.value = String(
-        Math.max(0, Math.min(duration || 0, state.previewTime))
-      );
+      scrub.value = String(Math.max(0, Math.min(duration || 0, state.previewTime)));
       scrub.disabled = !state.exercise;
     }
     $("tl-tp-loop-a")?.classList.toggle("active", state.loopA != null);
@@ -1465,9 +1446,7 @@
   function configureForm() {
     const keySel = $("tl-key");
     if (!keySel) return;
-    keySel.innerHTML = KEY_ORDER2.map(
-      (key) => `<option value="${key}">${key}</option>`
-    ).join("");
+    keySel.innerHTML = KEY_ORDER2.map((key) => `<option value="${key}">${key}</option>`).join("");
     keySel.value = "C";
     const viewSel = $("tl-view");
     if (viewSel) viewSel.value = state.activeView;
@@ -1487,28 +1466,19 @@
     const tuningSel = $("tl-tuning");
     const stringSetSel = $("tl-stringset");
     if (instrumentSel) {
-      instrumentSel.innerHTML = ["guitar", "bass"].map(
-        (id) => `<option value="${id}">${id === "bass" ? "Bass" : "Guitar"}</option>`
-      ).join("");
+      instrumentSel.innerHTML = ["guitar", "bass"].map((id) => `<option value="${id}">${id === "bass" ? "Bass" : "Guitar"}</option>`).join("");
       instrumentSel.value = instrument;
     }
-    const counts = availableStringCounts(instrument).filter(
-      (count) => count >= 4
-    );
+    const counts = availableStringCounts(instrument).filter((count) => count >= 4);
     const preferredCount = counts.includes(Number(cfg?.stringCount)) ? Number(cfg?.stringCount) : instrument === "bass" ? 4 : 6;
     if (stringCountSel) {
       stringCountSel.innerHTML = counts.map((count) => `<option value="${count}">${count} strings</option>`).join("");
       stringCountSel.value = String(preferredCount);
     }
-    const presets = availableTuningPresets(
-      instrument,
-      preferredCount
-    );
+    const presets = availableTuningPresets(instrument, preferredCount);
     const tuning = Array.isArray(cfg?.tuning) ? cfg.tuning : [];
     const selectedPreset = presets.find((preset) => preset.id === cfg?.tuningPreset) || (tuning.length ? presets.find(
-      (preset) => preset.tuning.length === tuning.length && preset.tuning.every(
-        (value, index) => Number(value) === Number(tuning[index])
-      )
+      (preset) => preset.tuning.length === tuning.length && preset.tuning.every((value, index) => Number(value) === Number(tuning[index]))
     ) : null) || presets[0] || null;
     if (tuningSel) {
       tuningSel.innerHTML = presets.map((preset) => `<option value="${preset.id}">${preset.label}</option>`).join("");
@@ -1517,10 +1487,7 @@
     if (stringSetSel) {
       const setOptions = stringSetOptions(preferredCount);
       stringSetSel.innerHTML = setOptions.map((opt) => `<option value="${opt.value}">${opt.label}</option>`).join("");
-      stringSetSel.value = sanitizeStringSet(
-        cfg?.stringSet || stringSetSel.value,
-        preferredCount
-      );
+      stringSetSel.value = sanitizeStringSet(cfg?.stringSet || stringSetSel.value, preferredCount);
     }
   }
   function refreshInstrumentControls() {
@@ -1529,19 +1496,13 @@
   function readConfig() {
     const instrument = inputValue("tl-instrument", "guitar") === "bass" ? "bass" : "guitar";
     const stringCount = clamp(
-      parseInt(
-        inputValue("tl-string-count", instrument === "bass" ? "4" : "6"),
-        10
-      ),
+      parseInt(inputValue("tl-string-count", instrument === "bass" ? "4" : "6"), 10),
       4,
       8
     );
     const tuningPreset = inputValue("tl-tuning", "standard");
     const setup = resolveStringSetup({ instrument, stringCount, tuningPreset });
-    const stringSet = sanitizeStringSet(
-      inputValue("tl-stringset"),
-      setup.stringCount
-    );
+    const stringSet = sanitizeStringSet(inputValue("tl-stringset"), setup.stringCount);
     return {
       lesson: inputValue("tl-lesson"),
       instrument: setup.instrument,
@@ -1576,8 +1537,7 @@
     if (view === "notation") {
       return ensureRenderer("notation").then(() => {
         syncHighwaySettings(state.activeBundle);
-        if (state.activeBundle)
-          state.activeBundle.currentTime = state.previewTime;
+        if (state.activeBundle) state.activeBundle.currentTime = state.previewTime;
         state.renderer?.draw?.(state.activeBundle);
         setStatus(
           `${state.exercise?.summary}
@@ -1598,33 +1558,119 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
     });
   }
   async function resolveRendererFactory(kind) {
-    if (kind === "builtin_2d")
-      return { factory: makeBuiltin2DRenderer, label: "2D Highway" };
-    if (kind === "tab_2d")
-      return { factory: makeBuiltin2DTabRenderer, label: "Tab" };
-    if (kind === "notation_2d")
-      return { factory: makeBuiltin2DNotationRenderer, label: "Notation" };
-    return { factory: makeBuiltin2DRenderer, label: "2D Highway" };
+    if (kind === "highway_3d") {
+      const threeFactory = appWindow.slopsmithViz_highway_3d;
+      if (typeof threeFactory === "function") {
+        return {
+          factory: () => {
+            const renderer = threeFactory();
+            if (!renderer || typeof renderer !== "object") {
+              throw new Error("3D renderer factory returned an invalid instance.");
+            }
+            return renderer;
+          },
+          label: "3D Highway",
+          contextType: threeFactory.contextType === "webgl2" ? "webgl2" : "2d"
+        };
+      }
+      return {
+        factory: () => makeBuiltin2DRenderer(),
+        label: "2D Highway",
+        contextType: "2d",
+        fallback3d: true
+      };
+    }
+    if (kind === "builtin_2d") {
+      return {
+        factory: () => makeBuiltin2DRenderer(),
+        label: "2D Highway",
+        contextType: "2d"
+      };
+    }
+    if (kind === "tab_2d") {
+      return {
+        factory: () => makeBuiltin2DTabRenderer(),
+        label: "Tab",
+        contextType: "2d"
+      };
+    }
+    if (kind === "notation_2d") {
+      return {
+        factory: () => makeBuiltin2DNotationRenderer(),
+        label: "Notation",
+        contextType: "2d"
+      };
+    }
+    return {
+      factory: () => makeBuiltin2DRenderer(),
+      label: "2D Highway",
+      contextType: "2d"
+    };
+  }
+  function ensureCanvasForContext(contextType) {
+    const current = $("triadlab-canvas");
+    if (!current) return null;
+    if (state.canvasContextType && state.canvasContextType !== contextType) {
+      const fresh = current.cloneNode(false);
+      current.replaceWith(fresh);
+      return fresh;
+    }
+    return current;
   }
   async function ensureRenderer(view) {
-    const kind = view === "tab" ? "tab_2d" : view === "notation" ? "notation_2d" : "builtin_2d";
+    const kind = view === "highway3d" ? "highway_3d" : view === "tab" ? "tab_2d" : view === "notation" ? "notation_2d" : "builtin_2d";
     if (state.renderer && state.activeBundle && state.rendererKind === kind && state.bundleExercise === state.exercise)
       return;
     stopRenderer();
     if (!state.exercise) return;
     state.activeBundle = makeBundle(state.exercise);
     state.bundleExercise = state.exercise;
-    const canvas = $("triadlab-canvas");
     const resolved = await resolveRendererFactory(kind);
-    state.renderer = resolved.factory();
-    state.rendererKind = kind;
+    let canvas = ensureCanvasForContext(resolved.contextType);
+    if (!canvas) {
+      setStatus("Renderer unavailable: missing canvas.");
+      return;
+    }
+    try {
+      state.renderer = resolved.factory();
+      state.rendererKind = kind;
+      state.renderer?.init?.(canvas, state.activeBundle);
+      if (state.renderer?.readyPromise) await state.renderer.readyPromise;
+      state.renderer?.resize?.(
+        Math.round(canvas.clientWidth || canvas.width || 0),
+        Math.round(canvas.clientHeight || canvas.height || 0)
+      );
+      state.canvasContextType = resolved.contextType;
+      state.fallback3d = !!resolved.fallback3d;
+      setRenderNote(resolved.fallback3d ? "2D Highway (3D unavailable)" : resolved.label);
+      return;
+    } catch (err) {
+      stopRenderer();
+      if (kind !== "highway_3d") {
+        setStatus(
+          `${$("tl-status")?.textContent || ""}
+
+Render failed: ${err.message || err}`
+        );
+        return;
+      }
+    }
+    const fallback = await resolveRendererFactory("builtin_2d");
+    canvas = ensureCanvasForContext("2d");
+    if (!canvas) {
+      setStatus("Renderer fallback unavailable: missing canvas.");
+      return;
+    }
+    state.renderer = fallback.factory();
+    state.rendererKind = "builtin_2d";
     state.renderer?.init?.(canvas, state.activeBundle);
     state.renderer?.resize?.(
-      Math.round(canvas?.clientWidth || canvas?.width || 0),
-      Math.round(canvas?.clientHeight || canvas?.height || 0)
+      Math.round(canvas.clientWidth || canvas.width || 0),
+      Math.round(canvas.clientHeight || canvas.height || 0)
     );
-    state.fallback3d = false;
-    setRenderNote(resolved.label);
+    state.canvasContextType = "2d";
+    state.fallback3d = true;
+    setRenderNote("2D Highway (3D failed to initialize)");
   }
   function seekPreview(nextTime) {
     if (!state.exercise) return;
@@ -1766,9 +1812,8 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
     state.loopCount = 0;
     state.previewStartMs = performance.now() - state.previewTime * 1e3;
     state.lastPreviewTime = state.previewTime;
-    if (audioState.ctx?.state === "suspended")
-      audioState.ctx.resume().catch(() => {
-      });
+    if (audioState.ctx?.state === "suspended") audioState.ctx.resume().catch(() => {
+    });
     stopAudio();
     if (state.activeBundle) {
       schedulePreviewAudio(
@@ -1784,13 +1829,8 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
     state.rafId = requestAnimationFrame(tickPreview);
   }
   function syncViewButtons() {
-    Array.from(
-      document.querySelectorAll(".triadlab-tabs button[data-view]")
-    ).forEach((btn) => {
-      btn.classList.toggle(
-        "active",
-        btn.getAttribute("data-view") === state.activeView
-      );
+    Array.from(document.querySelectorAll(".triadlab-tabs button[data-view]")).forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-view") === state.activeView);
     });
     const viewSel = $("tl-view");
     if (viewSel) viewSel.value = state.activeView;
@@ -1799,31 +1839,19 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
     if (!cfg || typeof cfg !== "object") return;
     const c = cfg;
     populateInstrumentControls(c);
-    if (c.lesson)
-      $("tl-lesson").value = c.lesson;
+    if (c.lesson) $("tl-lesson").value = c.lesson;
     if (c.key) $("tl-key").value = c.key;
-    if (c.progression)
-      $("tl-progression").value = c.progression;
-    if (c.instrument)
-      $("tl-instrument").value = c.instrument;
+    if (c.progression) $("tl-progression").value = c.progression;
+    if (c.instrument) $("tl-instrument").value = c.instrument;
     if (Number.isFinite(c.stringCount))
-      $("tl-string-count").value = String(
-        c.stringCount
-      );
-    if (c.tuningPreset)
-      $("tl-tuning").value = c.tuningPreset;
-    if (c.stringSet)
-      $("tl-stringset").value = c.stringSet;
-    if (Number.isFinite(c.bpm))
-      $("tl-bpm").value = String(c.bpm);
-    if (Number.isFinite(c.bars))
-      $("tl-bars").value = String(c.bars);
+      $("tl-string-count").value = String(c.stringCount);
+    if (c.tuningPreset) $("tl-tuning").value = c.tuningPreset;
+    if (c.stringSet) $("tl-stringset").value = c.stringSet;
+    if (Number.isFinite(c.bpm)) $("tl-bpm").value = String(c.bpm);
+    if (Number.isFinite(c.bars)) $("tl-bars").value = String(c.bars);
     if (Number.isFinite(c.startFret))
-      $("tl-start-fret").value = String(
-        c.startFret
-      );
-    if (c.inversionMode)
-      $("tl-inversion").value = c.inversionMode;
+      $("tl-start-fret").value = String(c.startFret);
+    if (c.inversionMode) $("tl-inversion").value = c.inversionMode;
     if (c.view) {
       state.activeView = c.view;
       $("tl-view").value = c.view;
@@ -1833,18 +1861,13 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
       const metro = $("tl-audio-metronome");
       const harmony = $("tl-audio-harmony");
       const tone = $("tl-audio-tone");
-      if (typeof c.audio.notes === "boolean" && notes)
-        notes.checked = c.audio.notes;
-      if (typeof c.audio.metronome === "boolean" && metro)
-        metro.checked = c.audio.metronome;
-      if (typeof c.audio.harmony === "boolean" && harmony)
-        harmony.checked = c.audio.harmony;
+      if (typeof c.audio.notes === "boolean" && notes) notes.checked = c.audio.notes;
+      if (typeof c.audio.metronome === "boolean" && metro) metro.checked = c.audio.metronome;
+      if (typeof c.audio.harmony === "boolean" && harmony) harmony.checked = c.audio.harmony;
       if (c.audio.harmonyTone && tone) tone.value = c.audio.harmonyTone;
     }
     const selected = Array.isArray(c.qualities) ? new Set(c.qualities) : null;
-    Array.from(
-      document.querySelectorAll('#tl-qualities input[type="checkbox"]')
-    ).forEach((el) => {
+    Array.from(document.querySelectorAll('#tl-qualities input[type="checkbox"]')).forEach((el) => {
       el.checked = !selected || selected.has(el.value);
     });
     syncViewButtons();
@@ -1891,12 +1914,9 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
     const id = $("tl-presets")?.value;
     if (!id) return;
     if (!window.confirm("Delete selected preset?")) return;
-    const response = await fetch(
-      `/api/plugins/${PLUGIN_ID}/presets/${encodeURIComponent(id)}`,
-      {
-        method: "DELETE"
-      }
-    );
+    const response = await fetch(`/api/plugins/${PLUGIN_ID}/presets/${encodeURIComponent(id)}`, {
+      method: "DELETE"
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     await loadPresets();
   }
@@ -1928,17 +1948,11 @@ View: ${state.activeView}${state.fallback3d ? " (fallback active)" : ""}`
       "input",
       () => seekPreview(Number($("tl-tp-scrub").value))
     );
-    [
-      "tl-audio-notes",
-      "tl-audio-metronome",
-      "tl-audio-harmony",
-      "tl-audio-tone"
-    ].forEach((id) => {
+    ["tl-audio-notes", "tl-audio-metronome", "tl-audio-harmony", "tl-audio-tone"].forEach((id) => {
       $(id)?.addEventListener("change", () => {
         if (state.exercise) {
           state.exercise.session.audio = readConfig().audio;
-          if (state.activeBundle)
-            state.activeBundle.config.audio = state.exercise.session.audio;
+          if (state.activeBundle) state.activeBundle.config.audio = state.exercise.session.audio;
         }
         if (state.previewing && state.activeBundle) {
           stopAudio();
@@ -1986,9 +2000,7 @@ Preset delete failed: ${err.message || err}`
       syncViewButtons();
       void renderCurrent();
     });
-    Array.from(
-      document.querySelectorAll(".triadlab-tabs button[data-view]")
-    ).forEach((btn) => {
+    Array.from(document.querySelectorAll(".triadlab-tabs button[data-view]")).forEach((btn) => {
       btn.addEventListener("click", () => {
         state.activeView = btn.getAttribute("data-view") || "highway2d";
         syncViewButtons();
@@ -2010,14 +2022,11 @@ Preset delete failed: ${err.message || err}`
     ];
     regenIds.forEach((id) => {
       $(id)?.addEventListener("change", () => {
-        if (id === "tl-instrument" || id === "tl-string-count")
-          refreshInstrumentControls();
+        if (id === "tl-instrument" || id === "tl-string-count") refreshInstrumentControls();
         if (state.exercise) void generateDrill();
       });
     });
-    Array.from(
-      document.querySelectorAll('#tl-qualities input[type="checkbox"]')
-    ).forEach((el) => {
+    Array.from(document.querySelectorAll('#tl-qualities input[type="checkbox"]')).forEach((el) => {
       el.addEventListener("change", () => {
         if (state.exercise) void generateDrill();
       });
