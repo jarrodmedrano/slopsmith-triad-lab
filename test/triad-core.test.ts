@@ -62,6 +62,20 @@ describe("triad core", () => {
     expect(exercise.chart.notes).toHaveLength(9);
     expect(exercise.chart.beats[0]).toEqual({ time: 0, measure: 1 });
     expect(exercise.chart.duration).toBeCloseTo(7.5);
+
+    for (const chord of exercise.chart.chords) {
+      const fretted = chord.notes.map((note) => note.f).filter((fret) => fret > 0);
+      if (fretted.length <= 1) continue;
+      expect(Math.max(...fretted) - Math.min(...fretted)).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it("assigns non-trivial chord finger numbers", () => {
+    const exercise = buildChart(baseConfig);
+    const first = exercise.chart.chordTemplates[0];
+    const usedFingers = first.fingers.filter((finger) => finger > 0);
+    expect(usedFingers.length).toBeGreaterThan(0);
+    expect(new Set(usedFingers).size).toBeGreaterThan(1);
   });
 
   it("builds backing events from the generated chart", () => {

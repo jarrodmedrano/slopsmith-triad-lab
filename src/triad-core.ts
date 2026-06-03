@@ -677,6 +677,110 @@ export function fretForPitchClass(
   return best;
 }
 
+function candidateFretsForPitchClass(
+  openMidi: number,
+  targetPc: number,
+  minFret: number,
+  maxFret: number,
+): number[] {
+  const out: number[] = [];
+  for (let fret = minFret; fret <= maxFret; fret += 1) {
+    if ((((openMidi + fret) % 12) + 12) % 12 === targetPc) out.push(fret);
+  }
+  return out;
+}
+
+function isPlayableOneHandShape(frets: number[]): boolean {
+  const fretted = frets.filter((fret) => fret > 0);
+  if (!fretted.length) return true;
+  const minFret = Math.min(...fretted);
+  const maxFret = Math.max(...fretted);
+  return maxFret - minFret <= 4;
+}
+
+function findPlayableFretsForTriad(
+  openMidis: number[],
+  strings: number[],
+  triadPcOrder: number[],
+  centerFret: number,
+  minFret: number,
+  maxFret: number,
+  avoidOpenStrings: boolean,
+): number[] {
+  const candidates = strings.map((stringIndex, i) => {
+    const pc = triadPcOrder[i % 3];
+    const all = candidateFretsForPitchClass(
+      openMidis[stringIndex],
+      pc,
+      minFret,
+      maxFret,
+    );
+    return all
+      .slice()
+      .sort((a, b) => Math.abs(a - centerFret) - Math.abs(b - centerFret))
+      .slice(0, 6);
+  });
+
+  let best: number[] | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  function walk(index: number, built: number[]) {
+    if (index >= candidates.length) {
+      if (!isPlayableOneHandShape(built)) return;
+      const fretted = built.filter((fret) => fret > 0);
+      const min = fretted.length ? Math.min(...fretted) : 0;
+      const max = fretted.length ? Math.max(...fretted) : 0;
+      const span = fretted.length ? max - min : 0;
+      const avg = built.reduce((sum, fret) => sum + fret, 0) / built.length;
+      const score =
+        span * 10 +
+        Math.abs(avg - centerFret) * 3 +
+        built.reduce((sum, fret) => sum + Math.abs(fret - centerFret), 0) +
+        (avoidOpenStrings ? built.filter((fret) => fret === 0).length * 8 : 0);
+      if (score < bestScore) {
+        bestScore = score;
+        best = built.slice();
+      }
+      return;
+    }
+    for (const fret of candidates[index]) {
+      built.push(fret);
+      walk(index + 1, built);
+      built.pop();
+    }
+  }
+
+  walk(0, []);
+
+  if (best) return best;
+
+  return strings.map((stringIndex, i) =>
+    fretForPitchClass(
+      openMidis[stringIndex],
+      triadPcOrder[i % 3],
+      minFret,
+      maxFret,
+      centerFret,
+    ),
+  );
+}
+
+function assignFingersByFret(allFrets: number[]): number[] {
+  const out: number[] = allFrets.map((fret) =>
+    fret < 0 ? -1 : fret === 0 ? 0 : 1,
+  );
+  const fretted = allFrets.filter((fret) => fret > 0);
+  if (!fretted.length) return out;
+
+  const minFret = Math.min(...fretted);
+  for (let i = 0; i < allFrets.length; i += 1) {
+    const fret = allFrets[i];
+    if (fret <= 0) continue;
+    out[i] = clamp(fret - minFret + 1, 1, 4);
+  }
+  return out;
+}
+
 export function noteName(pc: number): string {
   return KEY_ORDER[((pc % 12) + 12) % 12];
 }
@@ -700,6 +804,7 @@ export function buildChart(cfg: TriadConfig): TriadExercise {
   const chordTemplates: ChordTemplate[] = [];
   const beats: Beat[] = [];
   const sections: Section[] = [];
+  const anchors: Anchor[] = [];
 
   let templateId = 0;
   const progression = degreePattern(cfg);
@@ -726,16 +831,19 @@ export function buildChart(cfg: TriadConfig): TriadExercise {
     const chordNotes: TriadNote[] = [];
     const allFrets = new Array(stringCount).fill(-1);
 
+    const selectedFrets = findPlayableFretsForTriad(
+      openMidis,
+      strings,
+      triadPcOrder,
+      centerFret,
+      cfg.startFret > 0 ? 1 : 0,
+      17,
+      cfg.startFret > 0,
+    );
+
     for (let i = 0; i < strings.length; i += 1) {
       const stringIndex = strings[i];
-      const pc = triadPcOrder[i % 3];
-      const fret = fretForPitchClass(
-        openMidis[stringIndex],
-        pc,
-        0,
-        17,
-        centerFret,
-      );
+      const fret = selectedFrets[i];
       allFrets[stringIndex] = fret;
 
       const note: TriadNote = {
@@ -762,16 +870,26 @@ export function buildChart(cfg: TriadConfig): TriadExercise {
     }
 
     const chordName = `${noteName(rootPc)}${QUALITY_LABEL[quality]} ${["R", "1st", "2nd"][inversion]}`;
+    const allFingers = assignFingersByFret(allFrets);
     chordTemplates.push({
       id: templateId,
       name: chordName,
       displayName: chordName,
       frets: allFrets,
-      fingers: new Array(stringCount).fill(-1),
+      fingers: allFingers,
       arp: false,
     });
     chords.push({ t, id: templateId, hd: false, notes: chordNotes });
     templateId += 1;
+
+    const frettedFrets = chordNotes.map((n) => n.f).filter((f) => f > 0);
+    if (frettedFrets.length > 0) {
+      const minF = Math.min(...frettedFrets);
+      const maxF = Math.max(...frettedFrets);
+      anchors.push({ time: t, fret: minF, width: Math.max(4, maxF - minF + 1) });
+    } else {
+      anchors.push({ time: t, fret: cfg.startFret, width: 4 });
+    }
 
     if (bar % 4 === 0) {
       sections.push({
@@ -813,7 +931,7 @@ export function buildChart(cfg: TriadConfig): TriadExercise {
       chords,
       chordTemplates,
       handShapes: [],
-      anchors: [{ time: 0, fret: cfg.startFret, width: 4 }],
+      anchors: anchors.length ? anchors : [{ time: 0, fret: cfg.startFret, width: 4 }],
       beats,
       sections,
       duration,
