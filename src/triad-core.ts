@@ -171,20 +171,7 @@ export interface TriadBundle {
   getNoteStateProvider: () => null;
 }
 
-export const KEY_ORDER = [
-  "C",
-  "C#",
-  "D",
-  "Eb",
-  "E",
-  "F",
-  "F#",
-  "G",
-  "Ab",
-  "A",
-  "Bb",
-  "B",
-] as const;
+export const KEY_ORDER = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"] as const;
 
 export const KEY_TO_PC: Record<string, number> = {
   C: 0,
@@ -412,10 +399,7 @@ export function choose<T>(items: T[], index: number): T | null {
   return items[((index % items.length) + items.length) % items.length];
 }
 
-export function baseOpenMidisForInstrument(
-  instrument: Instrument,
-  stringCount: number,
-): number[] {
+export function baseOpenMidisForInstrument(instrument: Instrument, stringCount: number): number[] {
   const bases: Record<Instrument, Record<number, number[]>> = {
     guitar: {
       4: [45, 50, 55, 59],
@@ -468,16 +452,12 @@ export function defaultStringSetup(
 ): TuningPreset | null {
   const presets = availableTuningPresets(instrument, stringCount);
   return (
-    presets.find((preset) => preset.setup && STRING_SETUPS[preset.setup]) ||
-    presets[0] ||
-    null
+    presets.find((preset) => preset.setup && STRING_SETUPS[preset.setup]) || presets[0] || null
   );
 }
 
 export function resolveStringSetup(
-  cfg: Partial<
-    Pick<TriadConfig, "instrument" | "stringCount" | "tuning" | "tuningPreset">
-  >,
+  cfg: Partial<Pick<TriadConfig, "instrument" | "stringCount" | "tuning" | "tuningPreset">>,
 ): StringSetup {
   const instrument = cfg?.instrument === "bass" ? "bass" : "guitar";
   const counts = availableStringCounts(instrument);
@@ -493,14 +473,11 @@ export function resolveStringSetup(
       if (cfg?.tuningPreset && preset.id === cfg.tuningPreset) return true;
       if (!Array.isArray(cfg?.tuning)) return false;
       if (cfg.tuning.length !== preset.tuning.length) return false;
-      return cfg.tuning.every(
-        (value, index) => Number(value) === Number(preset.tuning[index]),
-      );
+      return cfg.tuning.every((value, index) => Number(value) === Number(preset.tuning[index]));
     }) ||
     defaultStringSetup(instrument, desiredCount) ||
     null;
-  const tuning =
-    tuningPreset?.tuning?.slice() || new Array(desiredCount).fill(0);
+  const tuning = tuningPreset?.tuning?.slice() || new Array(desiredCount).fill(0);
   const setup =
     tuningPreset?.setup && STRING_SETUPS[tuningPreset.setup]
       ? STRING_SETUPS[tuningPreset.setup]
@@ -517,23 +494,15 @@ export function resolveStringSetup(
     instrument,
     stringCount: setup.stringCount || desiredCount,
     tuningPreset: tuningPreset?.id || setup.tuningPreset || "standard",
-    openMidis: (
-      setup.openMidis || openMidisFromTuning(instrument, desiredCount, tuning)
-    ).slice(),
+    openMidis: (setup.openMidis || openMidisFromTuning(instrument, desiredCount, tuning)).slice(),
     tuning: (setup.tuning || tuning).slice(),
   };
 }
 
-export function stringSetOptions(
-  stringCount: number,
-): Array<{ value: string; label: string }> {
+export function stringSetOptions(stringCount: number): Array<{ value: string; label: string }> {
   const options: Array<{ value: string; label: string }> = [];
   for (let start = 0; start <= Math.max(0, stringCount - 3); start += 1) {
-    const labels = [
-      stringCount - start,
-      stringCount - start - 1,
-      stringCount - start - 2,
-    ];
+    const labels = [stringCount - start, stringCount - start - 1, stringCount - start - 2];
     options.push({
       value: labels.join(""),
       label: `${labels[0]}-${labels[1]}-${labels[2]}`,
@@ -542,20 +511,14 @@ export function stringSetOptions(
   return options;
 }
 
-export function sanitizeStringSet(
-  stringSet: string,
-  stringCount: number,
-): string {
+export function sanitizeStringSet(stringSet: string, stringCount: number): string {
   const valid = new Set(stringSetOptions(stringCount).map((opt) => opt.value));
   if (valid.has(stringSet)) return stringSet;
   const fallback = stringSetOptions(stringCount)[0];
   return fallback ? fallback.value : "";
 }
 
-export function stringSetToIndices(
-  stringSet: string,
-  stringCount: number,
-): number[] {
+export function stringSetToIndices(stringSet: string, stringCount: number): number[] {
   const digits = String(stringSet || "")
     .split("")
     .map((digit) => Number.parseInt(digit, 10))
@@ -637,9 +600,7 @@ export function pickStringSet(
   cfg: Pick<TriadConfig, "lesson" | "stringCount" | "stringSet">,
   barIndex: number,
 ): string {
-  const available = stringSetOptions(cfg.stringCount || 6).map(
-    (opt) => opt.value,
-  );
+  const available = stringSetOptions(cfg.stringCount || 6).map((opt) => opt.value);
   if (cfg.lesson === "stringset") {
     const cycle = available.length ? available : ["654", "543", "432", "321"];
     return choose(cycle, barIndex) || "654";
@@ -652,8 +613,7 @@ export function pickQuality(
   degree: number,
   barIndex: number,
 ): string {
-  if (cfg.lesson === "progression" || cfg.progression !== "single")
-    return qualityForDegree(degree);
+  if (cfg.lesson === "progression" || cfg.progression !== "single") return qualityForDegree(degree);
   return choose(cfg.qualities, barIndex) || "maj";
 }
 
@@ -709,12 +669,7 @@ function findPlayableFretsForTriad(
 ): number[] {
   const candidates = strings.map((stringIndex, i) => {
     const pc = triadPcOrder[i % 3];
-    const all = candidateFretsForPitchClass(
-      openMidis[stringIndex],
-      pc,
-      minFret,
-      maxFret,
-    );
+    const all = candidateFretsForPitchClass(openMidis[stringIndex], pc, minFret, maxFret);
     return all
       .slice()
       .sort((a, b) => Math.abs(a - centerFret) - Math.abs(b - centerFret))
@@ -755,20 +710,12 @@ function findPlayableFretsForTriad(
   if (best) return best;
 
   return strings.map((stringIndex, i) =>
-    fretForPitchClass(
-      openMidis[stringIndex],
-      triadPcOrder[i % 3],
-      minFret,
-      maxFret,
-      centerFret,
-    ),
+    fretForPitchClass(openMidis[stringIndex], triadPcOrder[i % 3], minFret, maxFret, centerFret),
   );
 }
 
 function assignFingersByFret(allFrets: number[]): number[] {
-  const out: number[] = allFrets.map((fret) =>
-    fret < 0 ? -1 : fret === 0 ? 0 : 1,
-  );
+  const out: number[] = allFrets.map((fret) => (fret < 0 ? -1 : fret === 0 ? 0 : 1));
   const fretted = allFrets.filter((fret) => fret > 0);
   if (!fretted.length) return out;
 
@@ -817,11 +764,7 @@ export function buildChart(cfg: TriadConfig): TriadExercise {
     const inversion = inversionIndexFor(cfg, bar);
     const intervals = QUALITY_INTERVALS[quality] || QUALITY_INTERVALS.maj;
     const triadPcOrder = invertTriad(
-      [
-        (rootPc + intervals[0]) % 12,
-        (rootPc + intervals[1]) % 12,
-        (rootPc + intervals[2]) % 12,
-      ],
+      [(rootPc + intervals[0]) % 12, (rootPc + intervals[1]) % 12, (rootPc + intervals[2]) % 12],
       inversion,
     );
 
@@ -953,28 +896,21 @@ export function buildBackingEventsFromChart(
   duration: number,
   openMidis: number[],
 ): Array<{ t: number; end: number; name: string; midis: number[] }> {
-  const chords = Array.isArray(chart?.chords)
-    ? [...chart.chords].sort((a, b) => a.t - b.t)
-    : [];
+  const chords = Array.isArray(chart?.chords) ? [...chart.chords].sort((a, b) => a.t - b.t) : [];
   const templates = chart?.chordTemplates || [];
   const tuning =
-    Array.isArray(openMidis) && openMidis.length
-      ? openMidis
-      : resolveStringSetup({}).openMidis;
-  const out: Array<{ t: number; end: number; name: string; midis: number[] }> =
-    [];
+    Array.isArray(openMidis) && openMidis.length ? openMidis : resolveStringSetup({}).openMidis;
+  const out: Array<{ t: number; end: number; name: string; midis: number[] }> = [];
   for (let index = 0; index < chords.length; index += 1) {
     const chord = chords[index];
     const next = chords[index + 1];
     const start = Number(chord.t || 0);
     const end = Number(next ? next.t : duration || start + 1);
     if (end <= start) continue;
-    const name =
-      templates[chord.id]?.displayName || templates[chord.id]?.name || "Chord";
+    const name = templates[chord.id]?.displayName || templates[chord.id]?.name || "Chord";
     const midis: number[] = [];
     for (const note of chord.notes || []) {
-      if (note.mt || note.f < 0 || note.s < 0 || note.s >= tuning.length)
-        continue;
+      if (note.mt || note.f < 0 || note.s < 0 || note.s >= tuning.length) continue;
       midis.push(tuning[note.s] + note.f);
     }
     const uniq = [...new Set(midis)].sort((a, b) => a - b);
@@ -989,11 +925,7 @@ export function makeBundle(exercise: TriadExercise): TriadBundle {
   const openMidis = exercise.session?.openMidis?.length
     ? exercise.session.openMidis
     : resolveStringSetup(exercise.session || {}).openMidis;
-  const backingEvents = buildBackingEventsFromChart(
-    chart,
-    chart.duration,
-    openMidis,
-  );
+  const backingEvents = buildBackingEventsFromChart(chart, chart.duration, openMidis);
   return {
     currentTime: 0,
     config: exercise.session,
@@ -1016,9 +948,7 @@ export function makeBundle(exercise: TriadExercise): TriadBundle {
     chordTemplates: chart.chordTemplates,
     handShapes: [],
     stringCount: exercise.session?.stringCount || openMidis.length || 6,
-    tuning:
-      exercise.session?.tuning?.slice() ||
-      new Array(openMidis.length || 6).fill(0),
+    tuning: exercise.session?.tuning?.slice() || new Array(openMidis.length || 6).fill(0),
     openMidis: openMidis.slice(),
     capo: 0,
     lyrics: [],

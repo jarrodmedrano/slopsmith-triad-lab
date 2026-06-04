@@ -2,3 +2,4 @@ node_modules/
 dist/
 screen.js
 *.tsbuildinfo
+__pycache__/

@@ -625,6 +625,11 @@ function stopPreview() {
 
 function tickPreview() {
   if (!state.previewing || !state.exercise) return;
+  const root = $("triadlab-root");
+  if (!root || !root.offsetParent) {
+    stopPreview();
+    return;
+  }
   const previous = state.lastPreviewTime;
   const elapsed = (performance.now() - state.previewStartMs) / 1000;
   const duration = Math.max(1, getPreviewDuration());

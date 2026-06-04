@@ -1,20 +1,7 @@
 "use strict";
 (() => {
   // src/triad-core.ts
-  var KEY_ORDER = [
-    "C",
-    "C#",
-    "D",
-    "Eb",
-    "E",
-    "F",
-    "F#",
-    "G",
-    "Ab",
-    "A",
-    "Bb",
-    "B"
-  ];
+  var KEY_ORDER = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
   var KEY_TO_PC = {
     C: 0,
     "C#": 1,
@@ -277,9 +264,7 @@
       if (cfg?.tuningPreset && preset.id === cfg.tuningPreset) return true;
       if (!Array.isArray(cfg?.tuning)) return false;
       if (cfg.tuning.length !== preset.tuning.length) return false;
-      return cfg.tuning.every(
-        (value, index) => Number(value) === Number(preset.tuning[index])
-      );
+      return cfg.tuning.every((value, index) => Number(value) === Number(preset.tuning[index]));
     }) || defaultStringSetup(instrument, desiredCount) || null;
     const tuning = tuningPreset?.tuning?.slice() || new Array(desiredCount).fill(0);
     const setup = tuningPreset?.setup && STRING_SETUPS[tuningPreset.setup] ? STRING_SETUPS[tuningPreset.setup] : {
@@ -302,11 +287,7 @@
   function stringSetOptions(stringCount) {
     const options = [];
     for (let start = 0; start <= Math.max(0, stringCount - 3); start += 1) {
-      const labels = [
-        stringCount - start,
-        stringCount - start - 1,
-        stringCount - start - 2
-      ];
+      const labels = [stringCount - start, stringCount - start - 1, stringCount - start - 2];
       options.push({
         value: labels.join(""),
         label: `${labels[0]}-${labels[1]}-${labels[2]}`
@@ -369,9 +350,7 @@
     return (keyPc + (offsets[degree] || 0)) % 12;
   }
   function pickStringSet(cfg, barIndex) {
-    const available = stringSetOptions(cfg.stringCount || 6).map(
-      (opt) => opt.value
-    );
+    const available = stringSetOptions(cfg.stringCount || 6).map((opt) => opt.value);
     if (cfg.lesson === "stringset") {
       const cycle = available.length ? available : ["654", "543", "432", "321"];
       return choose(cycle, barIndex) || "654";
@@ -379,8 +358,7 @@
     return sanitizeStringSet(cfg.stringSet, cfg.stringCount || 6);
   }
   function pickQuality(cfg, degree, barIndex) {
-    if (cfg.lesson === "progression" || cfg.progression !== "single")
-      return qualityForDegree(degree);
+    if (cfg.lesson === "progression" || cfg.progression !== "single") return qualityForDegree(degree);
     return choose(cfg.qualities, barIndex) || "maj";
   }
   function fretForPitchClass(openMidi, targetPc, minFret, maxFret, centerFret) {
@@ -413,12 +391,7 @@
   function findPlayableFretsForTriad(openMidis, strings, triadPcOrder, centerFret, minFret, maxFret, avoidOpenStrings) {
     const candidates = strings.map((stringIndex, i) => {
       const pc = triadPcOrder[i % 3];
-      const all = candidateFretsForPitchClass(
-        openMidis[stringIndex],
-        pc,
-        minFret,
-        maxFret
-      );
+      const all = candidateFretsForPitchClass(openMidis[stringIndex], pc, minFret, maxFret);
       return all.slice().sort((a, b) => Math.abs(a - centerFret) - Math.abs(b - centerFret)).slice(0, 6);
     });
     let best = null;
@@ -447,19 +420,11 @@
     walk(0, []);
     if (best) return best;
     return strings.map(
-      (stringIndex, i) => fretForPitchClass(
-        openMidis[stringIndex],
-        triadPcOrder[i % 3],
-        minFret,
-        maxFret,
-        centerFret
-      )
+      (stringIndex, i) => fretForPitchClass(openMidis[stringIndex], triadPcOrder[i % 3], minFret, maxFret, centerFret)
     );
   }
   function assignFingersByFret(allFrets) {
-    const out = allFrets.map(
-      (fret) => fret < 0 ? -1 : fret === 0 ? 0 : 1
-    );
+    const out = allFrets.map((fret) => fret < 0 ? -1 : fret === 0 ? 0 : 1);
     const fretted = allFrets.filter((fret) => fret > 0);
     if (!fretted.length) return out;
     const minFret = Math.min(...fretted);
@@ -497,11 +462,7 @@
       const inversion = inversionIndexFor(cfg, bar);
       const intervals = QUALITY_INTERVALS[quality] || QUALITY_INTERVALS.maj;
       const triadPcOrder = invertTriad(
-        [
-          (rootPc + intervals[0]) % 12,
-          (rootPc + intervals[1]) % 12,
-          (rootPc + intervals[2]) % 12
-        ],
+        [(rootPc + intervals[0]) % 12, (rootPc + intervals[1]) % 12, (rootPc + intervals[2]) % 12],
         inversion
       );
       const stringSetId = pickStringSet(cfg, bar);
@@ -632,8 +593,7 @@
       const name = templates[chord.id]?.displayName || templates[chord.id]?.name || "Chord";
       const midis = [];
       for (const note of chord.notes || []) {
-        if (note.mt || note.f < 0 || note.s < 0 || note.s >= tuning.length)
-          continue;
+        if (note.mt || note.f < 0 || note.s < 0 || note.s >= tuning.length) continue;
         midis.push(tuning[note.s] + note.f);
       }
       const uniq = [...new Set(midis)].sort((a, b) => a - b);
@@ -645,11 +605,7 @@
   function makeBundle(exercise) {
     const chart = exercise.chart;
     const openMidis = exercise.session?.openMidis?.length ? exercise.session.openMidis : resolveStringSetup(exercise.session || {}).openMidis;
-    const backingEvents = buildBackingEventsFromChart(
-      chart,
-      chart.duration,
-      openMidis
-    );
+    const backingEvents = buildBackingEventsFromChart(chart, chart.duration, openMidis);
     return {
       currentTime: 0,
       config: exercise.session,
@@ -1864,6 +1820,11 @@ Render failed: ${err.message || err}`
   }
   function tickPreview() {
     if (!state.previewing || !state.exercise) return;
+    const root = $("triadlab-root");
+    if (!root || !root.offsetParent) {
+      stopPreview();
+      return;
+    }
     const previous = state.lastPreviewTime;
     const elapsed = (performance.now() - state.previewStartMs) / 1e3;
     const duration = Math.max(1, getPreviewDuration());
