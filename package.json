@@ -5,7 +5,7 @@
   "scripts": {
     "prebuild": "node scripts/inject-version.js",
     "build": "esbuild screen.ts --bundle --format=iife --platform=browser --target=es2020 --outfile=screen.js",
-    "version": "node scripts/sync-version.js && git add plugin.json",
+    "version": "node scripts/sync-version.js && npm run build && git add plugin.json screen.html screen.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test screen.ts",
