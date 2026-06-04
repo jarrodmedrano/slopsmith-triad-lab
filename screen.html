@@ -5,11 +5,7 @@
     padding: calc(18px + var(--triadlab-nav-offset)) 18px 18px;
     color: #e5e7eb;
     background:
-      radial-gradient(
-        circle at top right,
-        rgba(20, 70, 120, 0.18),
-        transparent 32rem
-      ),
+      radial-gradient(circle at top right, rgba(20, 70, 120, 0.18), transparent 32rem),
       linear-gradient(180deg, #0a0f18 0%, #0d121d 100%);
     box-sizing: border-box;
   }
@@ -395,6 +391,11 @@
   .triadlab-presets select {
     flex: 1;
   }
+  .triadlab-version {
+    font-size: 11px;
+    color: #9d9d9d;
+    margin-left: 6px;
+  }
   @media (max-width: 980px) {
     .triadlab-layout {
       grid-template-columns: 1fr;
@@ -412,10 +413,9 @@
   <div class="triadlab-layout">
     <section class="triadlab-panel triadlab-controls">
       <div>
-        <h1 class="triadlab-title">Triad Lab</h1>
+        <h1 class="triadlab-title">Triad Lab <span class="triadlab-version">v0.4.0</span></h1>
         <p class="triadlab-sub">
-          Focused guitar triad drills: quality, inversions, string sets, and
-          progressions.
+          Focused guitar triad drills: quality, inversions, string sets, and progressions.
         </p>
       </div>
 
@@ -486,36 +486,15 @@
       <div class="triadlab-row3">
         <label>
           BPM
-          <input
-            id="tl-bpm"
-            type="number"
-            min="40"
-            max="220"
-            step="1"
-            value="92"
-          />
+          <input id="tl-bpm" type="number" min="40" max="220" step="1" value="92" />
         </label>
         <label>
           Bars
-          <input
-            id="tl-bars"
-            type="number"
-            min="2"
-            max="24"
-            step="1"
-            value="8"
-          />
+          <input id="tl-bars" type="number" min="2" max="24" step="1" value="8" />
         </label>
         <label>
           Start Fret
-          <input
-            id="tl-start-fret"
-            type="number"
-            min="0"
-            max="15"
-            step="1"
-            value="2"
-          />
+          <input id="tl-start-fret" type="number" min="0" max="15" step="1" value="2" />
         </label>
       </div>
 
@@ -537,20 +516,15 @@
         </select>
       </label>
 
-      <div
-        class="triadlab-audio-options triadlab-audio-row"
-        aria-label="Preview audio options"
-      >
+      <div class="triadlab-audio-options triadlab-audio-row" aria-label="Preview audio options">
         <label class="triadlab-toggle"
           ><input id="tl-audio-notes" type="checkbox" checked /> Notes</label
         >
         <label class="triadlab-toggle"
-          ><input id="tl-audio-metronome" type="checkbox" checked />
-          Metronome</label
+          ><input id="tl-audio-metronome" type="checkbox" checked /> Metronome</label
         >
         <label class="triadlab-toggle"
-          ><input id="tl-audio-harmony" type="checkbox" checked />
-          Harmony</label
+          ><input id="tl-audio-harmony" type="checkbox" checked /> Harmony</label
         >
         <label class="triadlab-audio-tone" for="tl-audio-tone"
           >Tone
@@ -588,11 +562,7 @@
       <div class="triadlab-canvas-wrap">
         <canvas id="triadlab-canvas"></canvas>
       </div>
-      <div
-        id="tl-transport"
-        class="triadlab-transport"
-        aria-label="Preview transport"
-      >
+      <div id="tl-transport" class="triadlab-transport" aria-label="Preview transport">
         <div class="triadlab-scrub-row">
           <div class="triadlab-scrub-rail"></div>
           <div id="tl-loop-region" class="triadlab-loop-region" hidden></div>
@@ -641,8 +611,7 @@
             ⟩
           </button>
           <span class="triadlab-tp-time"
-            ><span id="tl-tp-time-cur">0:00</span> /
-            <span id="tl-tp-time-dur">0:00</span></span
+            ><span id="tl-tp-time-cur">0:00</span> / <span id="tl-tp-time-dur">0:00</span></span
           >
           <span class="triadlab-tp-sep"></span>
           <div class="triadlab-tp-loop" role="group" aria-label="A-B loop">
@@ -680,9 +649,7 @@
           </div>
         </div>
       </div>
-      <pre id="tl-status" class="triadlab-status">
-Generate a drill to begin.</pre
-      >
+      <pre id="tl-status" class="triadlab-status">Generate a drill to begin.</pre>
     </section>
   </div>
 </div>
