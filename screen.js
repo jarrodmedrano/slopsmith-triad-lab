@@ -1820,11 +1820,6 @@ Render failed: ${err.message || err}`
   }
   function tickPreview() {
     if (!state.previewing || !state.exercise) return;
-    const root = $("triadlab-root");
-    if (!root || !root.offsetParent) {
-      stopPreview();
-      return;
-    }
     const previous = state.lastPreviewTime;
     const elapsed = (performance.now() - state.previewStartMs) / 1e3;
     const duration = Math.max(1, getPreviewDuration());
@@ -2159,6 +2154,14 @@ Play failed: ${err.message || err}`
     configureForm();
     populateInstrumentControls({});
     bind();
+    if (!appWindow.__triadLabScreenHooked && typeof appWindow.showScreen === "function") {
+      appWindow.__triadLabScreenHooked = true;
+      const _origShowScreen = appWindow.showScreen;
+      appWindow.showScreen = function(screen, ...args) {
+        if (screen !== "triad_lab") stopPreview();
+        return _origShowScreen.call(this, screen, ...args);
+      };
+    }
     await loadPresets();
     await generateDrill();
     syncTransportUI();

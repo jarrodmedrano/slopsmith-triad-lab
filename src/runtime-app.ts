@@ -27,8 +27,10 @@ import {
 
 interface AppWindow extends Window {
   __triadLabTransportKeysBound?: boolean;
+  __triadLabScreenHooked?: boolean;
   slopsmithViz_highway_3d?: (...args: unknown[]) => unknown;
   playSong?: (filename: string, offset: number) => Promise<void>;
+  showScreen?: (screen: string, ...args: unknown[]) => void;
 }
 const appWindow = window as AppWindow;
 
@@ -625,11 +627,6 @@ function stopPreview() {
 
 function tickPreview() {
   if (!state.previewing || !state.exercise) return;
-  const root = $("triadlab-root");
-  if (!root || !root.offsetParent) {
-    stopPreview();
-    return;
-  }
   const previous = state.lastPreviewTime;
   const elapsed = (performance.now() - state.previewStartMs) / 1000;
   const duration = Math.max(1, getPreviewDuration());
@@ -991,6 +988,16 @@ async function boot() {
   configureForm();
   populateInstrumentControls({});
   bind();
+
+  if (!appWindow.__triadLabScreenHooked && typeof appWindow.showScreen === "function") {
+    appWindow.__triadLabScreenHooked = true;
+    const _origShowScreen = appWindow.showScreen;
+    appWindow.showScreen = function (screen: string, ...args: unknown[]) {
+      if (screen !== "triad_lab") stopPreview();
+      return _origShowScreen.call(this, screen, ...args);
+    };
+  }
+
   await loadPresets();
   await generateDrill();
   syncTransportUI();
