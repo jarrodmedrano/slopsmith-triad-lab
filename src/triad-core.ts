@@ -836,9 +836,9 @@ export function buildChart(cfg: TriadConfig): TriadExercise {
       strings,
       triadPcOrder,
       centerFret,
-      cfg.startFret > 0 ? 1 : 0,
+      0,
       17,
-      cfg.startFret > 0,
+      false,
     );
 
     for (let i = 0; i < strings.length; i += 1) {

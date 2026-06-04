@@ -919,13 +919,36 @@ function bind() {
   }
 }
 
+const PLAY_IN_HOST_LEAD_SECONDS = 5;
+
+function addLeadTime(exercise: TriadExercise, leadSeconds: number): TriadExercise {
+  const chart = exercise.chart;
+  return {
+    ...exercise,
+    chart: {
+      ...chart,
+      notes: chart.notes.map((n) => ({ ...n, t: n.t + leadSeconds })),
+      chords: chart.chords.map((c) => ({
+        ...c,
+        t: c.t + leadSeconds,
+        notes: c.notes.map((n) => ({ ...n, t: n.t + leadSeconds })),
+      })),
+      anchors: chart.anchors.map((a) => ({ ...a, time: a.time + leadSeconds })),
+      beats: chart.beats.map((b) => ({ ...b, time: b.time + leadSeconds })),
+      sections: chart.sections.map((s) => ({ ...s, time: s.time + leadSeconds })),
+      duration: chart.duration + leadSeconds,
+    },
+  };
+}
+
 async function playInHost() {
   try {
     if (!state.exercise) await generateDrill();
+    const exerciseForHost = addLeadTime(state.exercise!, PLAY_IN_HOST_LEAD_SECONDS);
     const response = await fetch(`/api/plugins/${PLUGIN_ID}/temp-sloppak`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ exercise: state.exercise }),
+      body: JSON.stringify({ exercise: exerciseForHost }),
     });
     if (!response.ok) {
       const text = await response.text();
