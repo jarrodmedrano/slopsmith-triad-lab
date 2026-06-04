@@ -1,6 +1,6 @@
 {
   "name": "triad-lab",
-  "version": "0.6.0",
+  "version": "0.0.7",
   "private": true,
   "scripts": {
     "prebuild": "node scripts/inject-version.js",
