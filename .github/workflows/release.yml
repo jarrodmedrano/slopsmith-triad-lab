@@ -45,8 +45,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Write install marker
+        run: |
+          echo '{
+            "repo": "jarrodmedrano/slopsmith-triad-lab",
+            "url": "https://github.com/jarrodmedrano/slopsmith-triad-lab",
+            "branch": "main",
+            "sha": "${{ github.sha }}",
+            "installed_at": '"$(date +%s)"'
+          }' > .slopsmith-installed.json
+
       - name: Create zip package
-        run: zip triad_lab-${{ steps.version.outputs.version }}.zip plugin.json screen.html screen.js routes.py
+        run: zip triad_lab-${{ steps.version.outputs.version }}.zip plugin.json screen.html screen.js routes.py .slopsmith-installed.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
